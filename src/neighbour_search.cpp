@@ -229,7 +229,6 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_R2curves(boo
         for (int j=0 ; j < index_dataset.get_hashtables_count(); j++)
             q.push_back(new Point(&query_dataset.curves.at(i)->get_grid_coords()->at(j),query_dataset.curves.at(i)->get_id(),i,query_dataset.curves.at(i)));
         q_arr.push_back(q);
-        //q_arr.at(i).at(q.size()-1);
     }
 
     for (int i = 0 ; i < q_size ; i++) {
@@ -421,4 +420,12 @@ vector<vector<string> *> *NearestNeighboursSearch::range_search_using_cube(long 
         combined_result->push_back(result);
     }
     return  combined_result;
+}
+
+double NearestNeighboursSearch::approx_get(double exact, double approx) {
+    return approx_factor(exact,approx);
+}
+
+double NearestNeighboursSearch::max_approx_get(vector<double> factors) {
+    return max_approx_factor(factors);
 }

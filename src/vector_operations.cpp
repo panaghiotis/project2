@@ -92,6 +92,15 @@ Point *vec_add(const Point &p1, const Point &p2) {
     return new Point(coords);
 }
 
+double approx_factor(double exact, double approx) {
+    return approx / exact;
+}
+
+double max_approx_factor(vector<double> factor_arr) {
+    sort(factor_arr.begin(), factor_arr.end());
+    return factor_arr.at(factor_arr.size()-1);
+}
+
 Centroid *vec_avg(vector<Point *> &points, unsigned int dim) {
     vector<double> *sums = new vector<double>(dim);
     for (int j = 0 ; j < points[0]->coords->size() ; j++) {
