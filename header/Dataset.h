@@ -24,8 +24,9 @@ public:
     Dataset(ifstream &file, bool isFrechet = false);
     ~Dataset();
     void print(bool isFrechet = false) const;
-    void index_LSH(unsigned int hashtable_size);
+    void index_LSH(unsigned int hashtable_size, bool isFrechet = false);
     Bucket **get_buckets_for_point(Point *p);
+    Bucket *get_bucket_for_curve(Point *p, int num);
     unsigned int get_dim() const { return dim; }
     void set_dim(unsigned int d) { dim = d; }
     unsigned int get_size() const { return size; }
@@ -36,6 +37,8 @@ public:
     Bucket *get_vertex_by_number(int num);
     unsigned int get_vertex_number(Point *p);
     int get_dimension_from_cube();
+    double **get_Fr_t_of_htable(int num);
+    void print_LSH();
 };
 
 

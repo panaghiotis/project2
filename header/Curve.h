@@ -11,12 +11,14 @@ private:
     int y_dim;
     string id;
     vector<pair<int,double>> *R2_coords;
-    vector<double> *coords;
+    vector<vector<double>> *coords_arr;
 public:
     Curve(int dim, string name, vector<pair<int,double>> *curve_coords);
     ~Curve();
-    void Grid_hash();
-    vector<double> *get_grid_coords();
+    void Grid_hash(double **t);
+    vector<vector<double>> *get_grid_coords();
+    vector<pair<int,double>> *get_curve_coords();
+    string get_id();
     void print();
 };
 

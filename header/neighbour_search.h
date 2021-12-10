@@ -40,7 +40,9 @@ public:
     long long int calculate_exact_distances();
     long long int calculate_only_lsh_distances();      // only calculate distances for same buckets
     vector<Result *> *calculate_exact_NN(int k);
+    vector<Result *> *calculate_exact_NN_R2curves();
     vector<Result *> *calculate_approximate_NN(int k, bool use_query_trick=USE_QUERY_TRICK);
+    vector<Result *> *calculate_approximate_NN_R2curves(bool use_query_trick=USE_QUERY_TRICK);
     vector<vector<string> *> *range_search(long double r, bool use_query_trick=USE_QUERY_TRICK);
     list<Point*> LSH_search(long double r, Point *q, bool use_query_trick=USE_QUERY_TRICK);
      list<Point *> cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q);

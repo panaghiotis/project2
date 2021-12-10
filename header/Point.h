@@ -17,9 +17,14 @@ struct Point{
     Point(vector<double> *coordinates, string id = "", int pos = -1, Curve *curve = NULL) :
         id(id), coords(coordinates), hashed_ID(-1), hashed(false), pos(pos), curve(curve) {}
     ~Point() {
-        delete coords;
+        //delete coords;
     }
-    void print() const { cout << "id: " << id << " - 1st coord: " << coords->at(0) << endl; }
+    void print() const {
+        cout << "id:" << id <<endl;
+        for(int i=0; i < 5;i++)
+            cout << coords->at(i) << " ";
+        cout << endl;
+    }
     friend ostream& operator<<(ostream& os, const Point& p);
 };
 

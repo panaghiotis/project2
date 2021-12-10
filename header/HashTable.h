@@ -34,12 +34,14 @@ class HashTable {
     Bucket *buckets;
     vector<unsigned int> r;
     vector<HashFunction *> h;     // h.size() == r.size() == # num of buckets
+    double *t;
 public:
     HashTable(unsigned int size, unsigned int k, unsigned int dim);
     ~HashTable();
     unsigned int g(Point &p);     // hash into ints in [0, hashtable_size - 1]
     void hash_and_add(Point *p);
     Bucket *get_bucket(unsigned int num);
+    double **get_Frechet_t();
     void print() const;
 };
 
