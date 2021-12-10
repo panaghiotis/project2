@@ -176,7 +176,8 @@ int main(int argc, char **argv) {
         cout <<"Using Hypercube algorithm" << endl;
         input_dataset->index_HyperCube(k);
     }else if( method == FRECHET && frechet_metric == DISCRETE){
-
+        cout << "Using LSH Frechet Discrete algorithm" << endl;
+        input_dataset->index_LSH((input_dataset->get_size()) / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
     }
     cout << "Done!" << endl;
 
@@ -220,7 +221,13 @@ int main(int argc, char **argv) {
     bool repeat;
     do {
         // load query dataset
-        Dataset *query_dataset = new Dataset(query_stream);
+        Dataset *query_dataset;
+        if(method == LSH || method == HYPERCUBE) {
+            query_dataset = new Dataset(query_stream);
+        }
+        else {
+            query_dataset = new Dataset(query_stream, true);
+        }
         // initialize average time
         double t_approx = 0.0;
         double t_true = 0.0;
@@ -230,11 +237,18 @@ int main(int argc, char **argv) {
         * Both datasets are ready!
         */
 
-        //if(method == LSH || method == HYPERCUBE)
         NearestNeighboursSearch nns(*input_dataset, *query_dataset);
 
-        cout << "Calculating exact neighbours..." << endl;
-        vector<Result *> *exactResult = nns.calculate_exact_NN(N);
+        cout << "Calculating exact neighbours";
+        vector<Result *> *exactResult;
+        if(method == FRECHET && frechet_metric == DISCRETE) {
+            cout << " with frechet..." <<endl;
+            exactResult = nns.calculate_exact_NN_R2curves();
+        }
+        else {
+            cout << "..."<<endl;
+            exactResult = nns.calculate_exact_NN(N);
+        }
         cout << "Done!" << endl;
 
         vector<Result *> *approximateResult;
@@ -245,6 +259,10 @@ int main(int argc, char **argv) {
         else if(method == HYPERCUBE) {
             cout << "Calculating approximate neighbours using Hypercube..." << endl;
             approximateResult = nns.calculate_approximate_NN_using_cube(N, probes, M);
+        }
+        else if(method == FRECHET && frechet_metric == DISCRETE){
+            cout << "Calculating approximate neighbours using Discrete Frechet..." << endl;
+            approximateResult = nns.calculate_approximate_NN_R2curves();
         }
         cout << "Done!" << endl;
 
