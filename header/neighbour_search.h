@@ -48,6 +48,8 @@ public:
      list<Point *> cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q);
     vector<Result *> *calculate_approximate_NN_using_cube(int k, int probes, int M);
     vector<vector<string> *> *range_search_using_cube(long double r, int probes, int M);
+    double approx_get(double exact, double approx);
+    double max_approx_get(vector<double> factors);
 };
 
 // for sorting

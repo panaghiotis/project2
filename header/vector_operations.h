@@ -20,5 +20,7 @@ long double dot_product(const Point &p1, const Point &p2);
 long unsigned int int_dot_product(const vector<unsigned int> &v1, const vector<unsigned int> &v2);
 Point *vec_add(const Point &p1, const Point &p2);
 Centroid *vec_avg(vector<Point *> &points, unsigned int dim);
+double approx_factor(double exact, double approx);
+double max_approx_factor(vector<double> factor_arr);
 
 #endif
