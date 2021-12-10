@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <float.h>
+#include <cstdlib>
 #include "../header/Curve.h"
 
 extern double delta; // 0.1 or 0.01
@@ -17,25 +18,22 @@ Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords) {
     this->y_dim = dim;
     this->id = name;
     this->R2_coords = curve_coords;
-    this->coords = new vector<double>();
+    this->coords_arr = new vector<vector<double>>();
 }
 
 Curve::~Curve() {
-    delete this->coords;
+    delete this->coords_arr;
     delete this->R2_coords;
 }
 
-void Curve::Grid_hash() {
+void Curve::Grid_hash(double **t) {
     // randomly generate all t from [0, delta)
     uniform_real_distribution<double> dist(0.0, delta);
-    vector<double> *t = new vector<double>();
-    int t_size = 2*(this->y_dim);
-    for (int i = 0 ; i < t_size ; i++) {
-        t->push_back(dist(generator_2d));
-    }
-
+//    double *t = new double[2];
+//    for (int i = 0 ; i < 2 ; i++) {
+//        t[i] = dist(generator_2d);
+//    }
     // snap to grid
-    int t_placement=0;
     vector<pair<double,double>> snapping_arr;
     pair<double,double> xy;
     for(int i = 0 ; i < this->y_dim ; i++) {
@@ -43,10 +41,8 @@ void Curve::Grid_hash() {
         double y = this->R2_coords->at(i).second;
 
         // snap x and y
-        x = (floor((x-(t->at(t_placement)))/delta + 0.5)*delta + t->at(t_placement));
-        t_placement++;
-        y = (floor((y-(t->at(t_placement)))/delta + 0.5)*delta + t->at(t_placement));
-        t_placement++;
+        x = (floor(abs(x-(*t)[0])/delta + 0.5)*delta + (*t)[0]);
+        y = (floor(abs(y-(*t)[1])/delta + 0.5)*delta + (*t)[1]);
         xy.first = x;
         xy.second = y;
 
@@ -76,18 +72,35 @@ void Curve::Grid_hash() {
     }
 
     //get 1d coordinates of curve for saving in LSH
+    vector<double> R_coords;
     for(int i=0; i < snapping_arr.size(); i++) {
-        this->coords->push_back(snapping_arr.at(i).first);
-        this->coords->push_back(snapping_arr.at(i).second);
+        R_coords.push_back(snapping_arr.at(i).first);
+        R_coords.push_back(snapping_arr.at(i).second);
     }
+    this->coords_arr->push_back(R_coords);
+
+    //free memory
+//    for(int i = 0; i < 2; i++)
+//        delete[] t;
 }
 
-vector<double> *Curve::get_grid_coords() {
-    return this->coords;
+vector<vector<double>> *Curve::get_grid_coords() {
+    return this->coords_arr;
+}
+
+vector<pair<int, double>> *Curve::get_curve_coords() {
+    return this->R2_coords;
+}
+
+string Curve::get_id() {
+    return this->id;
 }
 
 void Curve::print() {
-    cout << "id: " << id << " - 1st coord: " << R2_coords->at(0).first <<" "<< R2_coords->at(0).second <<" "<< coords->at(0)  << endl;
+    cout << "id: " << id << " - 1st coord: " << R2_coords->at(0).first <<" "<< R2_coords->at(0).second << endl;
+    for(int i=0; i < coords_arr->size(); i++)
+        cout << "R1 1st coord: " << coords_arr->at(i).at(0) << " ";
+    cout << endl;
 }
 
 

@@ -10,7 +10,11 @@ using namespace std;
  * Wrapper to use for distances elsewhere.
  * If we want to change the distance used we can do this here.
  */
-long double used_distance(const Point &p1, const Point &p2) {
+long double used_distance(const Point &p1, const Point &p2, bool isFrechet) {
+    if(isFrechet) {
+        //cout << p1.curve->get_curve_coords()->at(0).first << " " << p1.curve->get_curve_coords()->at(0).second << endl;
+        return discreteFrechet_distance(*p1.curve->get_curve_coords(), *p2.curve->get_curve_coords());
+    }
     return L2_distance(p1, p2);   // use Euclidean distance
 }
 

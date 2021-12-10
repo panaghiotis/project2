@@ -6,6 +6,7 @@
 
 using namespace std;
 
+extern double delta;
 
 // random seeded generator seeded once at start of program
 default_random_engine generator = default_random_engine(time(NULL));
@@ -42,6 +43,14 @@ HashTable::HashTable(unsigned int size, unsigned int k, unsigned int dim) : hash
     for (int i = 0 ; i < k ; i++) {
         h.push_back(new HashFunction(dim));
     }
+
+    //create t for discrete Frechet in R2
+    t = new double [2];
+    uniform_real_distribution<double> fr_dist(0.0, delta);
+    for(int i=0; i< 2; i++) {
+        //t.push_back(fr_dist(generator));
+        t[i] = fr_dist(generator);
+    }
 }
 
 HashTable::~HashTable() {
@@ -49,6 +58,7 @@ HashTable::~HashTable() {
     for (int i = 0; i < h.size(); i++) {
         delete h[i];
     }
+    delete[] t;
 }
 
 unsigned int HashTable::g(Point &p) {
@@ -75,10 +85,16 @@ Bucket *HashTable::get_bucket(unsigned int num) {
     return &buckets[num];
 }
 
+double **HashTable::get_Frechet_t() {
+    return &this->t;
+}
+
 void HashTable::print() const {
     int count = 0;
     for (int i = 0 ; i < hashtable_size ; i++) {
         cout << "Bucket[" << i << "] size:" << buckets[i].get_size() << endl;
+        for(int j=0 ; j < buckets[i].get_size();j++)
+            buckets[i].points.at(j)->print();
         count += buckets[i].get_size();
     }
     cout << "Total count:" << count << endl;

@@ -30,10 +30,11 @@ Dataset::Dataset(ifstream &file, bool isFrechet) : size(0), dim(0) {
             curves.push_back(new Curve(coords->size(), ID, curve_coords));
 
             //Grid hash and save in 1d LSH as new points only used for saving curves
-            curves.at(curves.size() - 1)->Grid_hash();
+            //curves.at(curves.size() - 1)->Grid_hash();
             dim = 2 * (coords->size());
-            points.push_back(
-                    new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
+            //points.push_back(new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
+            //free memory
+            delete coords;
         } else {
             dim = coords->size();   // should be the same for every point
             points.push_back(new Point(coords, ID, i));        // save pos i for later
@@ -65,6 +66,7 @@ Dataset::~Dataset() {
     for (int i = 0; i < points.size(); i++){
         delete points[i];
     }
+
     for(int i = 0; i < curves.size(); i++){
         delete curves[i];
     }
@@ -73,15 +75,39 @@ Dataset::~Dataset() {
     }
 }
 
-void Dataset::index_LSH(unsigned int hashtable_size) {
+void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet) {
     // init hashtables
-    for (int i = 0 ; i < L ; i++) {
-        hashTables.push_back(new HashTable(hashtable_size, k, dim));
+    if(isFrechet){
+        for (int i = 0 ; i < L ; i++) {
+            hashTables.push_back(new HashTable(hashtable_size, k, dim));
+
+            // Grid hash
+            for(int j=0; j < curves.size(); j++)
+                curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
+        }
+
+        // Save into L LSH tables as new points only used for saving curves
+        for(int i=0; i < curves.size(); i++) {
+            for(int j = 0 ; j < L ; j++){
+                //curves.at(i)->Grid_hash((hashTables.at(j)->get_Frechet_t()));
+                //cout << &curves.at(i)->get_grid_coords()->at(j) <<endl;
+                points.push_back(new Point(&curves.at(i)->get_grid_coords()->at(j), curves.at(i)->get_id(), i, curves.at(i)));
+                //points.at(points.size()-1)->print();
+                //cout << "same size?: " << points.at(points.size()-1)->coords->size() <<endl;
+                hashTables[j]->hash_and_add(points.at(points.size()-1));
+            }
+        }
     }
-    // hash all the points into the hash tables
-    for (int i = 0 ; i < points.size() ; i++) {
-        for (int j = 0 ; j < L ; j++) {
-            hashTables[j]->hash_and_add(points[i]);
+    else{
+        // init hashtables
+        for (int i = 0 ; i < L ; i++) {
+            hashTables.push_back(new HashTable(hashtable_size, k, dim));
+        }
+        // hash all the points into the hash tables
+        for (int i = 0 ; i < points.size() ; i++) {
+            for (int j = 0 ; j < L ; j++) {
+                hashTables[j]->hash_and_add(points[i]);
+            }
         }
     }
 }
@@ -93,6 +119,11 @@ Bucket **Dataset::get_buckets_for_point(Point *p) {
         result[i] = hashTables[i]->get_bucket(bucket_num);
     }
     return result;
+}
+
+Bucket *Dataset::get_bucket_for_curve(Point *p, int num) {
+    unsigned int bucket_num = hashTables[num]->g(*p);
+    return hashTables[num]->get_bucket(bucket_num);
 }
 
 void Dataset::index_HyperCube(unsigned int k) {
@@ -118,4 +149,15 @@ unsigned int Dataset::get_vertex_number(Point *p) {
 
 int Dataset::get_dimension_from_cube() {
     return hypercube->get_hyper_dimension();
+}
+
+double **Dataset::get_Fr_t_of_htable(int num) {
+    return this->hashTables.at(num)->get_Frechet_t();
+}
+
+void Dataset::print_LSH() {
+    for(int i=0; i < hashTables.size(); i++) {
+        cout << "Hash Table numbber " << i << " :" << endl;
+        hashTables[i]->print();
+    }
 }
