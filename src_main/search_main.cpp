@@ -269,6 +269,14 @@ int main(int argc, char **argv) {
         // query size found
         q_size = approximateResult->size();
 
+        cout << "Calculating Max Approximation Factor..." << endl;
+        vector<double> factors;
+        for(int i=0; i < q_size; i++) {
+            factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,approximateResult->at(i)->NNs->at(0).dist));
+        }
+        double maf = nns.max_approx_get(factors);
+        cout << "Done!" << endl;
+
 //        cout << "Calculating range search using LSH..." << endl;
 //        vector<vector<string> *> *range_search_res = nns.range_search(R);
 //        cout << "Done!" << endl;
@@ -312,7 +320,7 @@ int main(int argc, char **argv) {
         t_true = t_true / q_size;
         output_stream << "tApproximateAverage: "<< t_approx << " micro secs" << endl;
         output_stream << "tTrueAverage: "<< t_true << " micro secs" << endl;
-        //TODO: MAF
+        output_stream << "MAF: "<< maf << endl;
 
         delete exactResult;
         delete approximateResult;
