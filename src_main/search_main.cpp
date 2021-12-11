@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cfloat>
 #include "../header/neighbour_search.h"
 #include "../header/InputParser.h"
 
@@ -7,7 +8,7 @@ using namespace std;
 
 // globals
 unsigned int k = 0;           // number of hi hash functions, also dimension d' for hypercube
-unsigned int L = 0;           // number of g()s and hash tables
+unsigned int L = 0;           // number of g()s , hash tables and grids
 unsigned int N = 1;           // number of neighbours to search
 unsigned int M = 0;           // number of points to be checked
 unsigned int probes = 0;      // number of vertices to check
@@ -22,6 +23,7 @@ double delta = 0.0;           //delta for Frechet
 
 #define DEFAULT_k 4           // number of hash functions per hash table
 #define DEFAULT_L 5           // number of hash tables
+#define DEFAULT_CONTI_L 1     // L must be 1 for continuous Frechet
 //#define DEFAULT_N 1           // number of nearest neighbours
 #define DEFAULT_CUBE_k 14     // number of dimension d' (also k: number of h)
 #define DEFAULT_M 10          // number of points to be checked
@@ -136,7 +138,10 @@ int main(int argc, char **argv) {
     // fall back to defaults if not given
     if ( method == LSH || method == FRECHET && k == 0) k = DEFAULT_k;
     if ( method == HYPERCUBE && k == 0) k = DEFAULT_CUBE_k;
-    if (L == 0) L = DEFAULT_L;
+    if( method == FRECHET && frechet_metric == CONTINUOUS) L = DEFAULT_CONTI_L;
+    else {
+        if (L == 0) L = DEFAULT_L;
+    }
     if (M == 0) M = DEFAULT_M;
     if (probes == 0) probes = DEFAULT_PR;
     if(delta == 0.0) delta = DEFAULT_Delta;
@@ -163,10 +168,16 @@ int main(int argc, char **argv) {
     Dataset *input_dataset;
     if(method == LSH || method == HYPERCUBE)
         input_dataset = new Dataset(input_stream);
-    else {
+    else if (method == FRECHET && frechet_metric == DISCRETE)
+    {
         input_dataset = new Dataset(input_stream, true);
         //input_dataset->print(true);
     }
+    else if(method == FRECHET && frechet_metric == CONTINUOUS)
+    {
+        input_dataset = new Dataset(input_stream, true, true);
+    }
+    else {cerr<< "Something went wrong with input Dataset!" << endl; return -1;}
     cout << "Indexing input dataset..." << endl;
     if( method == LSH) {
         cout <<"Using LSH vector algorithm" << endl;
@@ -176,8 +187,16 @@ int main(int argc, char **argv) {
         cout <<"Using Hypercube algorithm" << endl;
         input_dataset->index_HyperCube(k);
     }else if( method == FRECHET && frechet_metric == DISCRETE){
-        cout << "Using LSH Frechet Discrete algorithm" << endl;
+        cout << "Using LSH Discrete Frechet algorithm" << endl;
         input_dataset->index_LSH((input_dataset->get_size()) / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
+    }
+    else if( method == FRECHET && frechet_metric == CONTINUOUS){
+        cout << "Using LSH Continuous Frechet algorithm" << endl;
+        input_dataset->index_LSH((input_dataset->get_size()) / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true, true);
+    }
+    else {
+        cerr << "Something went wrong with methods!" <<endl;
+        return -1;
     }
     cout << "Done!" << endl;
 
@@ -242,8 +261,12 @@ int main(int argc, char **argv) {
         cout << "Calculating exact neighbours";
         vector<Result *> *exactResult;
         if(method == FRECHET && frechet_metric == DISCRETE) {
-            cout << " with frechet..." <<endl;
+            cout << " with discrete frechet..." << endl;
             exactResult = nns.calculate_exact_NN_R2curves();
+        }
+        else if(method == FRECHET && frechet_metric == CONTINUOUS) {
+            cout << " with continuous frechet..." << endl;
+            //TODO: exactResult
         }
         else {
             cout << "..."<<endl;
@@ -264,6 +287,11 @@ int main(int argc, char **argv) {
             cout << "Calculating approximate neighbours using Discrete Frechet..." << endl;
             approximateResult = nns.calculate_approximate_NN_R2curves();
         }
+        else if(method == FRECHET && frechet_metric == CONTINUOUS){
+            cout << "Calculating approximate neighbours using Continuous Frechet..." << endl;
+            //TODO: approximateResult
+        }
+        else {cerr<< "Something went wrong with approximate nearest neighbor result!" << endl; return -1;}
         cout << "Done!" << endl;
 
         // query size found
@@ -289,6 +317,10 @@ int main(int argc, char **argv) {
                 output_stream << "Algorithm: {LSH_Vector}" << endl;
             else if(method == HYPERCUBE)
                 output_stream << "Algorithm: {Hypercube}" << endl;
+            else if(method == FRECHET && frechet_metric == DISCRETE)
+                output_stream << "Algorithm: {LSH_Frechet_Discrete}" << endl;
+            else
+                output_stream << "Algorithm: {LSH_Frechet_Continuous}" << endl;
             for (int j = 0; j < apprx_res->NNs->size(); j++) {
                 Neighbour &approx_nn = apprx_res->NNs->at(j);
                 Neighbour &real_nn = exact_res->NNs->at(j);
@@ -320,7 +352,10 @@ int main(int argc, char **argv) {
         t_true = t_true / q_size;
         output_stream << "tApproximateAverage: "<< t_approx << " micro secs" << endl;
         output_stream << "tTrueAverage: "<< t_true << " micro secs" << endl;
-        output_stream << "MAF: "<< maf << endl;
+        if(maf == DBL_MAX)
+            output_stream << "MAF: Infinite" << endl;
+        else
+            output_stream << "MAF: "<< maf << endl;
 
         delete exactResult;
         delete approximateResult;
