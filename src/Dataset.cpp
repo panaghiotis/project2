@@ -6,7 +6,7 @@ extern unsigned int k;
 extern unsigned int L;
 
 
-Dataset::Dataset(ifstream &file, bool isFrechet) : size(0), dim(0) {
+Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) {
     string token;
     int i = 0;
     while (file >> token) {
@@ -19,22 +19,29 @@ Dataset::Dataset(ifstream &file, bool isFrechet) : size(0), dim(0) {
                 file.ignore(1);
             }
         }
-        if (isFrechet) {
-            vector<pair<int, double>> *curve_coords = new vector<pair<int, double>>;
-            pair<int, double> coord_2d;
-            for (int i = 0; i < coords->size(); i++) {
-                coord_2d.first = i + 1;
-                coord_2d.second = coords->at(i);
-                curve_coords->push_back(coord_2d);
-            }
-            curves.push_back(new Curve(coords->size(), ID, curve_coords));
+        if(isFrechet) {
+            if (!isCont) {
+                vector<pair<int, double>> *curve_coords = new vector<pair<int, double>>;
+                pair<int, double> coord_2d;
+                for (int i = 0; i < coords->size(); i++) {
+                    coord_2d.first = i + 1;
+                    coord_2d.second = coords->at(i);
+                    curve_coords->push_back(coord_2d);
+                }
+                curves.push_back(new Curve(coords->size(), ID, curve_coords));
 
-            //Grid hash and save in 1d LSH as new points only used for saving curves
-            //curves.at(curves.size() - 1)->Grid_hash();
-            dim = 2 * (coords->size());
-            //points.push_back(new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
-            //free memory
-            delete coords;
+                //Grid hash and save in 1d LSH as new points only used for saving curves
+                //curves.at(curves.size() - 1)->Grid_hash();
+                dim = 2 * (coords->size());
+                //points.push_back(new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
+                //free memory
+                delete coords;
+            } else {
+                dim = coords->size();   // should be the same for every curve
+                //cout << coords->at(0) << endl;
+                curves.push_back(new Curve(dim,ID,NULL,coords));
+                //curves.at(curves.size()-1)->print();
+            }
         } else {
             dim = coords->size();   // should be the same for every point
             points.push_back(new Point(coords, ID, i));        // save pos i for later
@@ -66,7 +73,6 @@ Dataset::~Dataset() {
     for (int i = 0; i < points.size(); i++){
         delete points[i];
     }
-
     for(int i = 0; i < curves.size(); i++){
         delete curves[i];
     }
@@ -75,15 +81,19 @@ Dataset::~Dataset() {
     }
 }
 
-void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet) {
+void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont) {
     // init hashtables
     if(isFrechet){
         for (int i = 0 ; i < L ; i++) {
             hashTables.push_back(new HashTable(hashtable_size, k, dim));
 
-            // Grid hash
-            for(int j=0; j < curves.size(); j++)
-                curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
+            // Grid hash for Discrete or Continuous Frechet
+            for(int j=0; j < curves.size(); j++) {
+                if(!isCont) // R2 Grid
+                    curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
+                else        // R Grid
+                    curves.at(j)->R_Grid_hash();
+            }
         }
 
         // Save into L LSH tables as new points only used for saving curves
@@ -92,6 +102,7 @@ void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet) {
                 //curves.at(i)->Grid_hash((hashTables.at(j)->get_Frechet_t()));
                 //cout << &curves.at(i)->get_grid_coords()->at(j) <<endl;
                 points.push_back(new Point(&curves.at(i)->get_grid_coords()->at(j), curves.at(i)->get_id(), i, curves.at(i)));
+                //curves.at(i)->print(true);
                 //points.at(points.size()-1)->print();
                 //cout << "same size?: " << points.at(points.size()-1)->coords->size() <<endl;
                 hashTables[j]->hash_and_add(points.at(points.size()-1));

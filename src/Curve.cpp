@@ -4,26 +4,31 @@
 #include <ctime>
 #include <cmath>
 #include <limits>
-#include <float.h>
+#include <cfloat>
 #include <cstdlib>
 #include "../header/Curve.h"
 
 extern double delta; // 0.1 or 0.01
 
 // random seeded generator for discrete curves
-default_random_engine generator_2d = default_random_engine(time(NULL));
+//default_random_engine generator_2d = default_random_engine(time(NULL));
 
 
-Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords) {
+Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords, vector<double> *ccurve_coords) {
     this->y_dim = dim;
     this->id = name;
+    this->e = 5.0;
     this->R2_coords = curve_coords;
+    this->R_coords = ccurve_coords;
     this->coords_arr = new vector<vector<double>>();
 }
 
 Curve::~Curve() {
     delete this->coords_arr;
-    delete this->R2_coords;
+    if(this->R2_coords != NULL)
+        delete this->R2_coords;
+    if(this->R_coords != NULL)
+        delete this->R_coords;
 }
 
 void Curve::Grid_hash(double **t) {
@@ -65,7 +70,7 @@ void Curve::Grid_hash(double **t) {
                 //padding
                 snapping_arr.push_back(padding_num);
 
-                //check xy in i position again since we erased previous duplicate in postition i
+                //check xy in i position again since we erased previous duplicate in position i
                 i = i-1;
             }
         }
@@ -84,6 +89,57 @@ void Curve::Grid_hash(double **t) {
 //        delete[] t;
 }
 
+//TODO: keep filtering curves, prob Fred needs them for Frechet distance.
+void Curve::R_Grid_hash() {
+    // copy R coordinates in coordinates to be saved later as Grid keys in LSH
+    vector<double> temp_coords;
+    for(int i=0; i < this->R_coords->size(); i++)
+        temp_coords.push_back(this->R_coords->at(i));
+    //this->coords_arr->push_back(temp_coords);
+
+    // filter coordinates
+    //cout <<"temp coord size before filtering: " << temp_coords.size() << endl;
+    for(int i=0; i < temp_coords.size(); i++) {
+        //if(i > 114)
+        //    cout << "check 115 i: " << i << endl;
+        if( i < temp_coords.size() - 2) {
+            // |a-b| <= ε and |b-c| <= ε ,remove b
+            if(abs(temp_coords.at(i) - temp_coords.at(i+1)) <= this->e && abs(temp_coords.at(i+1) - temp_coords.at(i+2)) <= this->e){
+                temp_coords.erase(temp_coords.begin()+(i+1));
+                //cout << "point erased ";
+            }
+            //cout <<"curr size: " << temp_coords.size() << " i= " << i <<" (i+1)= " << (i+1) << endl;
+        }
+        else
+            break;
+    }
+
+    // snap to grid
+    for(int i=0; i < temp_coords.size(); i++) {
+        // snap each x
+        double x = floor(temp_coords.at(i) / delta) * delta;
+        //cout << "before snap:" << temp_coords.at(i) << endl;
+        temp_coords.at(i) = x;
+        //cout << "after snap:" << temp_coords.at(i) << endl;
+    }
+
+    // key implementation of minima maxima
+    vector<double> key;
+    for(int i=1; i < temp_coords.size() - 1; i++) {   //start from the second num and finish loop with the second from last
+        // { minima , maxima } of vi
+        key.push_back(min(min(temp_coords.at(i-1), temp_coords.at(i)), temp_coords.at(i+1)));
+        key.push_back(max(max(temp_coords.at(i-1), temp_coords.at(i)), temp_coords.at(i+1)));
+    }
+
+    // padding key
+    int k_last = key.size() - 1;
+    for(int i = k_last; i < ((2*y_dim)-4) ; i++)        // minima maxima gives from a num 2 except from the first and the last one
+        key.push_back(DBL_MAX);
+    //cout <<"key size: " << key.size() << endl;
+    //save key for LSH
+    this->coords_arr->push_back(key);
+}
+
 vector<vector<double>> *Curve::get_grid_coords() {
     return this->coords_arr;
 }
@@ -96,10 +152,13 @@ string Curve::get_id() {
     return this->id;
 }
 
-void Curve::print() {
-    cout << "id: " << id << " - 1st coord: " << R2_coords->at(0).first <<" "<< R2_coords->at(0).second << endl;
+void Curve::print(bool isCont) {
+    if(!isCont)
+        cout << "id: " << id << " - 1st coord: " << R2_coords->at(0).first <<" "<< R2_coords->at(0).second << endl;
+    else
+        cout << "id: " << id << " - 1st coord: " << R_coords->at(0) <<" - second coord: "<< R_coords->at(1) << endl;
     for(int i=0; i < coords_arr->size(); i++)
-        cout << "R1 1st coord: " << coords_arr->at(i).at(0) << " ";
+        cout << "R1 1st coord: " << coords_arr->at(i).at(0) << " and last: " << coords_arr->at(i).at(coords_arr->at(i).size()-1);
     cout << endl;
 }
 

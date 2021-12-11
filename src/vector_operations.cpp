@@ -1,6 +1,7 @@
 #include <cmath>
 #include <vector>
 #include<algorithm>
+#include <cfloat>
 #include "../header/vector_operations.h"
 
 using namespace std;
@@ -53,7 +54,7 @@ long double discreteFrechet_distance(vector<pair<int,double>> p, vector<pair<int
     for (int j=1; j < q.size(); j++)
         c[0][j] = max(c[0][j-1], euclidean2d_distance(p[0], q[j]));
 
-    // load random column and row with distances
+    // load every other column and row with distances
     for (int i=1; i < p.size(); i++)
         for (int j=1; j < q.size(); j++)
             c[i][j] = max(min(min(c[i-1][j], c[i][j-1]), c[i-1][j-1]), euclidean2d_distance(p[i], q[j]));
@@ -93,6 +94,11 @@ Point *vec_add(const Point &p1, const Point &p2) {
 }
 
 double approx_factor(double exact, double approx) {
+    if(exact == 0 && approx == 0)
+        return 1;
+    else if(exact == 0)
+        return DBL_MAX;
+
     return approx / exact;
 }
 
