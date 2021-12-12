@@ -23,7 +23,7 @@ public:
     Dataset() {};
     Dataset(ifstream &file, bool isFrechet = false, bool isCont = false);
     ~Dataset();
-    void print(bool isFrechet = false) const;
+    void print(bool isFrechet = false, bool isCont = false) const;
     void index_LSH(unsigned int hashtable_size, bool isFrechet = false, bool isCont = false);
     Bucket **get_buckets_for_point(Point *p);
     Bucket *get_bucket_for_curve(Point *p, int num);
