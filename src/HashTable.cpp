@@ -44,7 +44,7 @@ HashTable::HashTable(unsigned int size, unsigned int k, unsigned int dim) : hash
         h.push_back(new HashFunction(dim));
     }
 
-    //create t for discrete Frechet in R2
+    //create t for discrete Frechet in R2 or for continuous Frechet in R (just need 1 t for R)
     t = new double [2];
     uniform_real_distribution<double> fr_dist(0.0, delta);
     for(int i=0; i< 2; i++) {

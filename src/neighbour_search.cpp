@@ -161,6 +161,89 @@ vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_R2curves() {
     return results;
 }
 
+vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_Rcurves() {
+    vector<Result *> *results = new vector<Result *>();
+    unsigned int q_size = query_dataset.curves.size();
+    unsigned int ind_size = index_dataset.curves.size();
+    for (int i = 0 ; i < q_size ; i++) {
+        // create new result entry
+        Result *res = new Result();
+
+        // time starts
+        chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+        // calculate all distances
+        vector<pair<string, long double>> dists;
+        dists.reserve(ind_size);
+        for (int j = 0 ; j < ind_size ; j++) {
+            dists.emplace_back(index_dataset.curves.at(j)->get_id(), continuousFrechet_distanceByFred(*query_dataset.curves.at(i),*index_dataset.curves.at(j)));
+        }
+
+        // sort distances with their ids
+        std::sort(dists.begin(), dists.end(), sort_pred());
+
+        // time ends
+        chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+
+        // add NN to the result
+        vector<Neighbour> *NNs = new vector<Neighbour>();
+        for (int j = 0 ; j < 1 && j < dists.size() ; j++) {
+            NNs->emplace_back(dists[j].first, dists[j].second);
+        }
+
+        // set result fields
+        res->queryID = query_dataset.curves[i]->get_id();
+        res->NNs = NNs;
+        res->dt = dt;
+        results->push_back(res);
+    }
+    return results;
+}
+
+vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_curves(bool isCont) {
+    vector<Result *> *results = new vector<Result *>();
+    unsigned int q_size = query_dataset.curves.size();
+    unsigned int ind_size = index_dataset.curves.size();
+    for (int i = 0 ; i < q_size ; i++) {
+        // create new result entry
+        Result *res = new Result();
+
+        // time starts
+        chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+        // calculate all distances
+        vector<pair<string, long double>> dists;
+        dists.reserve(ind_size);
+        for (int j = 0 ; j < ind_size ; j++) {
+            if(isCont)
+                dists.emplace_back(index_dataset.curves.at(j)->get_id(), continuousFrechet_distanceByFred(*query_dataset.curves.at(i),*index_dataset.curves.at(j)));
+            else
+                dists.emplace_back(index_dataset.curves.at(j)->get_id(), discreteFrechet_distance(*query_dataset.curves.at(i)->get_curve_coords(),*index_dataset.curves.at(j)->get_curve_coords()));
+        }
+
+        // sort distances with their ids
+        std::sort(dists.begin(), dists.end(), sort_pred());
+
+        // time ends
+        chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+
+        // add NN to the result
+        vector<Neighbour> *NNs = new vector<Neighbour>();
+        for (int j = 0 ; j < 1 && j < dists.size() ; j++) {
+            NNs->emplace_back(dists[j].first, dists[j].second);
+        }
+
+        // set result fields
+        res->queryID = query_dataset.curves[i]->get_id();
+        res->NNs = NNs;
+        res->dt = dt;
+        results->push_back(res);
+    }
+    return results;
+}
+
 vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN(int k,  bool use_query_trick) {
     vector<Result *> *results = new vector<Result *>();
     unsigned int q_size = query_dataset.points.size();
@@ -251,6 +334,150 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_R2curves(boo
                 if (!use_query_trick || (p1->hashed && p2->hashed && p1->hashed_ID == p2->hashed_ID)) {     // query trick
                     if (seen.find(p2->id) == seen.end()) {                                               // if not already seen this point
                         dists.emplace_back(p2->id, used_distance(*p1, *p2, true));
+                        seen.insert(p2->id);
+                    }
+                }
+            }
+            //delete bucket;
+        }
+
+        // sort distances with their ids
+        std::sort(dists.begin(), dists.end(), sort_pred());
+
+        // time ends
+        chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+
+        // add kNNs to the result
+        vector<Neighbour> *NNs = new vector<Neighbour>();
+        for (int j = 0 ; j < 1 && j < dists.size() ; j++) {     // k might be > dists.size() if no neighbors
+            NNs->emplace_back(dists[j].first, dists[j].second);
+        }
+
+        // set result fields
+        res->queryID = query_dataset.curves[i]->get_id();
+        res->NNs = NNs;
+        res->dt = dt;
+        results->push_back(res);
+    }
+    return results;
+}
+
+vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_Rcurves(bool use_query_trick) {
+    vector<Result *> *results = new vector<Result *>();
+    unsigned int q_size = query_dataset.curves.size();
+
+    //Grid query curves and get R coords
+    for (int j = 0 ; j < index_dataset.get_hashtables_count(); j++) {
+        for(int i=0; i < q_size; i++) {
+            query_dataset.curves.at(i)->R_Grid_hash(*index_dataset.get_Fr_t_of_htable(j)[0]);
+        }
+    }
+
+    //make a vector of points for each curve
+    vector<vector<Point *>> q_arr;
+    for (int i=0; i < q_size; i++) {
+        vector<Point *> q;
+        for (int j=0 ; j < index_dataset.get_hashtables_count(); j++)
+            q.push_back(new Point(&query_dataset.curves.at(i)->get_grid_coords()->at(j),query_dataset.curves.at(i)->get_id(),i,query_dataset.curves.at(i)));
+        q_arr.push_back(q);
+    }
+
+    for (int i = 0 ; i < q_size ; i++) {
+        // create new result entry
+        Result *res = new Result();
+
+        // time starts
+        chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+        // calculate only specific distances according to LSH
+        vector<pair<string, long double>> dists;
+
+        //search L Grids
+        for (int n = 0; n < index_dataset.get_hashtables_count(); n++) {            // L buckets
+            Point *p1 = q_arr.at(i).at(n);
+            unordered_set<string> seen;                                           // multiple hash tables -> may find an element multiple times
+            Bucket *bucket = index_dataset.get_bucket_for_curve(p1,n);
+            for (int z = 0; z < bucket->points.size(); z++) {                   // might be empty
+                const Point *p2 = bucket->points[z];
+                if (!use_query_trick || (p1->hashed && p2->hashed && p1->hashed_ID == p2->hashed_ID)) {     // query trick
+                    if (seen.find(p2->id) == seen.end()) {                                               // if not already seen this point
+                        dists.emplace_back(p2->id, continuousFrechet_distanceByFred(*p1->curve, *p2->curve));
+                        seen.insert(p2->id);
+                    }
+                }
+            }
+            //delete bucket;
+        }
+
+        // sort distances with their ids
+        std::sort(dists.begin(), dists.end(), sort_pred());
+
+        // time ends
+        chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+
+        // add kNNs to the result
+        vector<Neighbour> *NNs = new vector<Neighbour>();
+        for (int j = 0 ; j < 1 && j < dists.size() ; j++) {     // k might be > dists.size() if no neighbors
+            NNs->emplace_back(dists[j].first, dists[j].second);
+        }
+
+        // set result fields
+        res->queryID = query_dataset.curves[i]->get_id();
+        res->NNs = NNs;
+        res->dt = dt;
+        results->push_back(res);
+    }
+    return results;
+}
+
+vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_curves(bool isCont, bool use_query_trick) {
+    vector<Result *> *results = new vector<Result *>();
+    unsigned int q_size = query_dataset.curves.size();
+
+    //Grid query curves and get R coords
+    for (int j = 0 ; j < index_dataset.get_hashtables_count(); j++) {
+        for(int i=0; i < q_size; i++) {
+            if(isCont)
+                query_dataset.curves.at(i)->R_Grid_hash(*index_dataset.get_Fr_t_of_htable(j)[0]);
+            else
+                query_dataset.curves.at(i)->Grid_hash(index_dataset.get_Fr_t_of_htable(j));
+        }
+    }
+
+    //make a vector of points for each curve
+    vector<vector<Point *>> q_arr;
+    for (int i=0; i < q_size; i++) {
+        vector<Point *> q;
+        for (int j=0 ; j < index_dataset.get_hashtables_count(); j++)
+            q.push_back(new Point(&query_dataset.curves.at(i)->get_grid_coords()->at(j),query_dataset.curves.at(i)->get_id(), i, query_dataset.curves.at(i)));
+        q_arr.push_back(q);
+    }
+
+    for (int i = 0 ; i < q_size ; i++) {
+        // create new result entry
+        Result *res = new Result();
+
+        // time starts
+        chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+        // calculate only specific distances according to LSH
+        vector<pair<string, long double>> dists;
+
+        //search L Grids
+        for (int n = 0; n < index_dataset.get_hashtables_count(); n++) {            // L buckets
+            Point *p1 = q_arr.at(i).at(n);
+            unordered_set<string> seen;                                           // multiple hash tables -> may find an element multiple times
+            Bucket *bucket = index_dataset.get_bucket_for_curve(p1,n);
+            for (int z = 0; z < bucket->points.size(); z++) {                   // might be empty
+                const Point *p2 = bucket->points[z];
+                if (!use_query_trick || (p1->hashed && p2->hashed && p1->hashed_ID == p2->hashed_ID)) {     // query trick
+                    if (seen.find(p2->id) == seen.end()) {                                               // if not already seen this point
+                        if(isCont)
+                            dists.emplace_back(p2->id, continuousFrechet_distanceByFred(*p1->curve, *p2->curve));
+                        else
+                            dists.emplace_back(p2->id, used_distance(*p1, *p2, true));
                         seen.insert(p2->id);
                     }
                 }

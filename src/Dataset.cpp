@@ -32,7 +32,7 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
 
                 //Grid hash and save in 1d LSH as new points only used for saving curves
                 //curves.at(curves.size() - 1)->Grid_hash();
-                dim = 2 * (coords->size());
+                dim = 2 * (coords->size());     //TODO: Is that needed?
                 //points.push_back(new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
                 //free memory
                 delete coords;
@@ -40,7 +40,8 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
                 dim = coords->size();   // should be the same for every curve
                 //cout << coords->at(0) << endl;
                 curves.push_back(new Curve(dim,ID,NULL,coords));
-                //curves.at(curves.size()-1)->print();
+                curves.at(curves.size()-1)->R_Filtering();
+                //curves.at(curves.size()-1)->print(true);
             }
         } else {
             dim = coords->size();   // should be the same for every point
@@ -56,10 +57,18 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
 }
 
 
-void Dataset::print(bool isFrechet) const {
+void Dataset::print(bool isFrechet, bool isCont) const {
     if(isFrechet) {
-        for(int i=0; i < curves.size(); i++) {
-            curves[i]->print();
+        if(isCont) {
+            //cout << "query curve size: " << curves.size() << endl;
+            for(int i=0; i < curves.size(); i++) {
+                curves[i]->print(true);
+            }
+        }
+        else {
+            for(int i=0; i < curves.size(); i++) {
+                curves[i]->print();
+            }
         }
     }
     else {
@@ -92,7 +101,7 @@ void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont
                 if(!isCont) // R2 Grid
                     curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
                 else        // R Grid
-                    curves.at(j)->R_Grid_hash();
+                    curves.at(j)->R_Grid_hash(*hashTables.at(i)->get_Frechet_t()[0]);
             }
         }
 

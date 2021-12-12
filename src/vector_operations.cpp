@@ -3,6 +3,7 @@
 #include<algorithm>
 #include <cfloat>
 #include "../header/vector_operations.h"
+#include "../FredFilesNeeded/include/frechet.hpp"       //Fred lib
 
 using namespace std;
 
@@ -67,6 +68,26 @@ long double discreteFrechet_distance(vector<pair<int,double>> p, vector<pair<int
     delete[] c;
 
     return result;
+}
+
+double continuousFrechet_distanceByFred(Curve &c1, Curve &c2) {
+    // Construct Fred Curves
+    Fred_Curve f_c1 = Fred_Curve(c1.get_filtered_coords()->size(),c1.get_dimension(),c1.get_id());
+    Fred_Curve f_c2 = Fred_Curve(c2.get_filtered_coords()->size(),c2.get_dimension(),c2.get_id());
+
+    //set R coordinates of each curve in Fred Curves
+    Fred_Point f_p1 = Fred_Point(c1.get_dimension());
+    for(int i=0; i < c1.get_dimension(); i++)
+        f_p1.set(i,c1.get_Rcoords()->at(i));
+    f_c1.push_back(f_p1);
+
+    Fred_Point f_p2 = Fred_Point(c2.get_dimension());
+    for(int i=0; i < c2.get_dimension(); i++)
+        f_p2.set(i,c2.get_Rcoords()->at(i));
+    f_c2.push_back(f_p2);
+
+    //calculate Continuous Frechet Distance using Fred's Algorithm
+    return Frechet::Continuous::distance(f_c1, f_c2).value;
 }
 
 long double dot_product(const Point &p1, const Point &p2) {
