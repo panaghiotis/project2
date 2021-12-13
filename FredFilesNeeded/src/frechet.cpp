@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 #include <limits>
 #include <ctime>
+#include <algorithm>
 
 #include "../include/frechet.hpp"
 
@@ -50,6 +51,7 @@ Distance distance(const Fred_Curve &curve1, const Fred_Curve &curve2) {
     
     auto dist = _distance(curve1, curve2, ub, lb);
     dist.time_bounds = (end - start) / CLOCKS_PER_SEC;
+    //std::cout << "distance= " << dist.value << std::endl;
 
     return dist;
 }
@@ -219,8 +221,8 @@ distance_t _projective_lower_bound(const Fred_Curve &curve1, const Fred_Curve &c
                 distances1_sqr[j] = curve1[i].dist_sqr(curve2[j]);
             }
         }
-        //distances2_sqr[i] = *std::min_element(distances1_sqr.begin(), distances1_sqr.end());
-        distances2_sqr[i] = *std::min(distances1_sqr.begin(), distances1_sqr.end());
+        distances2_sqr[i] = *std::min_element(distances1_sqr.begin(), distances1_sqr.end());
+        //distances2_sqr[i] = *std::min(distances1_sqr.begin(), distances1_sqr.end());
     }
     
     distances1_sqr = std::vector<distance_t>(curve1.complexity() - 1);
@@ -240,8 +242,8 @@ distance_t _projective_lower_bound(const Fred_Curve &curve1, const Fred_Curve &c
     
     distances2_sqr[curve1.complexity() + curve2.complexity()] = curve1[0].dist_sqr(curve2[0]);
     distances2_sqr[curve1.complexity() + curve2.complexity() + 1] = curve1[curve1.complexity()-1].dist_sqr(curve2[curve2.complexity()-1]);
-   // return std::sqrt(*std::max_element(distances2_sqr.begin(), distances2_sqr.end()));
-    return std::sqrt(*std::max(distances2_sqr.begin(), distances2_sqr.end()));
+    return std::sqrt(*std::max_element(distances2_sqr.begin(), distances2_sqr.end()));
+    //return std::sqrt(*std::max(distances2_sqr.begin(), distances2_sqr.end()));
 }
 
 } // end namespace Continuous
