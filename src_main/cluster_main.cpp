@@ -13,6 +13,7 @@ unsigned int k = 4;       // num of hash funcs hi
 unsigned int M = 10;      //M for cube
 unsigned int Dim = 3;     //dimension d' for cube
 unsigned int probes = 2;  //probes for cube
+double delta = 0.0;       //delta for Frechet
 
 bool complete = false;
 bool  silhouette = false;
@@ -58,6 +59,7 @@ int main(int argc, char **argv) {
     const string &conf_file = input.getCmdOption("-c");
     const string &output_file = input.getCmdOption("-o");
     const string &assignment = input.getCmdOption("-assignment");
+    const string &update = input.getCmdOption("-update");
     complete = input.cmdOptionExists("-complete");
     silhouette = input.cmdOptionExists("-silhouette");
 
@@ -74,9 +76,66 @@ int main(int argc, char **argv) {
     } else if (assignment == "Hypercube" || assignment == "hypercube" || assignment == "HYPERCUBE" ||
                assignment == "CUBE" || assignment == "cube") {
         method_for_kmeans = USE_HYPERCUBE;
-    } else {
+    } else if (assignment == "LSH_Frechet" || assignment == "LSH_frechet" || assignment == "lsh_Frechet" || assignment == "lsh_frechet" ) {
+        method_for_kmeans = USE_LSH_FRECHET;
+    }
+    else {
         cerr << "No correct method specified for kMeans. Default is Classic" << endl;
         method_for_kmeans = CLASSIC;
+    }
+
+    int update_for_kmeans;
+    if (method_for_kmeans == CLASSIC) {
+        if(update == "Mean Frechet") {
+            update_for_kmeans = MEAN_FRECHET;
+        } else if(update == "Mean Vector") {
+            update_for_kmeans = MEAN_VECTOR;
+        }
+        else {
+            cerr << "No correct update specified for kMeans. Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        }
+    } else if (method_for_kmeans == USE_RANGE_LSH) {
+        if(update == "Mean Frechet") {
+            cerr << "Cannot update LSH Vector kMeans with Frechet! Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        } else if(update == "Mean Vector") {
+            update_for_kmeans = MEAN_VECTOR;
+        }
+        else {
+            cerr << "No correct update specified for LSH Vector kMeans. Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        }
+    } else if (method_for_kmeans == USE_HYPERCUBE) {
+        if(update == "Mean Frechet") {
+            cerr << "Cannot update Hypercube kMeans with Frechet! Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        } else if(update == "Mean Vector") {
+            update_for_kmeans = MEAN_VECTOR;
+        }
+        else {
+            cerr << "No correct update specified for Hypercube kMeans. Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        }
+    } else if (method_for_kmeans == USE_LSH_FRECHET) {
+        if(update == "Mean Frechet") {
+            update_for_kmeans = MEAN_FRECHET;
+        } else if(update == "Mean Vector") {
+            cerr << "Cannot update LSH Frechet kMeans with Mean Vector! Default is Mean Frechet" << endl;
+            update_for_kmeans = MEAN_FRECHET;
+        } else {
+            cerr << "No correct update specified for LSH FRechet kMeans. Default is Mean Frechet" << endl;
+            update_for_kmeans = MEAN_FRECHET;
+        }
+    } else {
+        if(method_for_kmeans == CLASSIC || method_for_kmeans == USE_RANGE_LSH || method_for_kmeans == USE_HYPERCUBE) {
+            cerr << "No correct update specified for kMeans. Default is Mean Vector" << endl;
+            update_for_kmeans = MEAN_VECTOR;
+        }
+        else {
+            cerr << "No correct update specified for LSH Frechet kMeans. Default is Mean Frechet" << endl;
+            update_for_kmeans = MEAN_FRECHET;
+        }
     }
 
     // check input files from cdl
@@ -125,6 +184,8 @@ int main(int argc, char **argv) {
         input_dataset.index_LSH(input_dataset.get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE);
     if (method_for_kmeans == USE_HYPERCUBE)
         input_dataset.index_HyperCube(Dim);
+    if(method_for_kmeans == USE_LSH_FRECHET)
+        input_dataset.index_LSH(input_dataset.get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
 
     // get configuration file if not given
     if (conf_file.empty()) {
@@ -181,13 +242,18 @@ int main(int argc, char **argv) {
     }
 
     // write output
-    if (assignment == "LSH" || assignment == "lsh")
-        output_stream << "Algorithm: Range Search LSH" << endl;
-    else if (assignment == "Hypercube" || assignment == "hypercube" || assignment == "HYPERCUBE" ||
-             assignment == "CUBE" || assignment == "cube")
-        output_stream << "Algorithm: Range Search Hypercube" << endl;
-    else
-        output_stream << "Algorithm: Lloyds" << endl;
+    if (method_for_kmeans == USE_RANGE_LSH)
+        output_stream << "Algorithm: Assignment by Range search (LSH Vector), Update 1 by Points (in R)" << endl;
+    else if (method_for_kmeans == USE_HYPERCUBE)
+        output_stream << "Algorithm: Assignment by Range search (Hypercube), Update 1 by Points (in R)" << endl;
+    else if (method_for_kmeans == USE_LSH_FRECHET)
+        output_stream << "Algorithm: Assignment by Range search (LSH Frechet), Update 2 by Curves (in R^2)" << endl;
+    else {
+        if(update_for_kmeans == MEAN_VECTOR)
+            output_stream << "Algorithm: Lloyd's assignment, Update 1 by Points (in R)" << endl;
+        else
+            output_stream << "Algorithm: Lloyd's assignment, Update 2 by Curves (in R^2)" << endl;
+    }
     for (int i = 0; i < clusters.size(); i++) {
         output_stream << "CLUSTER-" << (i + 1) << " {size: " << clusters[i]->points.size()
                       << ", centroid: " << *((Point *) clusters[i]->centroid);
