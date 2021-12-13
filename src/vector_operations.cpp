@@ -5,6 +5,7 @@
 #include "../header/vector_operations.h"
 #include "../FredFilesNeeded/include/frechet.hpp"       //Fred lib
 
+
 using namespace std;
 
 
