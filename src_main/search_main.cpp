@@ -309,7 +309,10 @@ int main(int argc, char **argv) {
         cout << "Calculating Max Approximation Factor..." << endl;
         vector<double> factors;
         for(int i=0; i < q_size; i++) {
-            factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,approximateResult->at(i)->NNs->at(0).dist));
+            if(/*exactResult->at(i)->NNs->empty() ||*/ approximateResult->at(i)->NNs->empty())
+                factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,0));
+            else
+                factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,approximateResult->at(i)->NNs->at(0).dist));
         }
         double maf = nns.max_approx_get(factors);
         cout << "Done!" << endl;
@@ -333,9 +336,11 @@ int main(int argc, char **argv) {
             for (int j = 0; j < apprx_res->NNs->size(); j++) {
                 Neighbour &approx_nn = apprx_res->NNs->at(j);
                 Neighbour &real_nn = exact_res->NNs->at(j);
-                output_stream << "Approximate Nearest neighbor: "<< approx_nn.neighbourID << endl;
+                if(!approximateResult->at(i)->NNs->empty())
+                    output_stream << "Approximate Nearest neighbor: "<< approx_nn.neighbourID << endl;
                 output_stream << "True Nearest neighbor: "<< real_nn.neighbourID << endl;
-                output_stream << "distanceApproximate: " << approx_nn.dist << endl;
+                if(!approximateResult->at(i)->NNs->empty())
+                    output_stream << "distanceApproximate: " << approx_nn.dist << endl;
                 output_stream << "distanceTrue: " << real_nn.dist << endl;
             }
             t_approx += apprx_res->dt;
@@ -359,8 +364,8 @@ int main(int argc, char **argv) {
         //count and print average time
         t_approx = t_approx / q_size;
         t_true = t_true / q_size;
-        output_stream << "tApproximateAverage: "<< t_approx << " micro secs" << endl;
-        output_stream << "tTrueAverage: "<< t_true << " micro secs" << endl;
+        output_stream << "tApproximateAverage: "<< t_approx << " seconds" << endl;
+        output_stream << "tTrueAverage: "<< t_true << " seconds" << endl;
         if(maf == DBL_MAX)
             output_stream << "MAF: Infinite" << endl;
         else
