@@ -104,7 +104,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_exact_NN(int k) {
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -144,7 +144,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_R2curves() {
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add NN to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -184,7 +184,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_Rcurves() {
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add NN to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -227,7 +227,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_exact_NN_curves(bool isCont
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add NN to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -277,7 +277,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN(int k,  bool
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -346,7 +346,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_R2curves(boo
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -415,7 +415,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_Rcurves(bool
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -490,7 +490,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_curves(bool 
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();
@@ -617,7 +617,7 @@ vector<Result *> *NearestNeighboursSearch::calculate_approximate_NN_using_cube(i
 
         // time ends
         chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        long long int dt = chrono::duration_cast<chrono::microseconds>(end - begin).count();
+        long long int dt = chrono::duration_cast<chrono::seconds>(end - begin).count();
 
         // add kNNs to the result
         vector<Neighbour> *NNs = new vector<Neighbour>();

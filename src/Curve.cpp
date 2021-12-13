@@ -17,7 +17,7 @@ extern double delta; // 0.1 or 0.01
 Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords, vector<double> *ccurve_coords) {
     this->y_dim = dim;
     this->id = name;
-    this->e = 5.0;
+    this->e = 0.7;
     this->R2_coords = curve_coords;
     this->R_coords = ccurve_coords;
     this->coords_arr = new vector<vector<double>>();
@@ -101,8 +101,12 @@ void Curve::R_Filtering() {
     for(int i=0; i < temp_coords.size(); i++) {
         if( i < temp_coords.size() - 2) {
             // |a-b| <= ε and |b-c| <= ε ,remove b
-            if(abs(temp_coords.at(i) - temp_coords.at(i+1)) <= this->e && abs(temp_coords.at(i+1) - temp_coords.at(i+2)) <= this->e)
+            if(abs(temp_coords.at(i) - temp_coords.at(i+1)) <= this->e && abs(temp_coords.at(i+1) - temp_coords.at(i+2)) <= this->e) {
                 temp_coords.erase(temp_coords.begin()+(i+1));
+
+                //check i again with i+2 next to it this time
+                i = i - 1;
+            }
         }
     }
     //save filtered coordinates

@@ -14,7 +14,7 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
         string ID = token;
         vector<double> *coords = new vector<double>();
         while ((file.peek() != '\n' && file.peek() != '\r') && (file >> token)) {   // '\r' for windows, '\n' for unix
-            coords->push_back((double) atoi(token.c_str()));   // convert to real numbers
+            coords->push_back((double) atof(token.c_str()));   // convert to real numbers
             if (file.peek() == '\t' || file.peek() == ' ') {   // ignore these
                 file.ignore(1);
             }

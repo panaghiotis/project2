@@ -71,20 +71,24 @@ long double discreteFrechet_distance(vector<pair<int,double>> p, vector<pair<int
 }
 
 double continuousFrechet_distanceByFred(Curve &c1, Curve &c2) {
-    // Construct Fred Curves
-    Fred_Curve f_c1 = Fred_Curve(c1.get_filtered_coords()->size(),c1.get_dimension(),c1.get_id());
-    Fred_Curve f_c2 = Fred_Curve(c2.get_filtered_coords()->size(),c2.get_dimension(),c2.get_id());
-
     //set R coordinates of each curve in Fred Curves
-    Fred_Point f_p1 = Fred_Point(c1.get_dimension());
-    for(int i=0; i < c1.get_dimension(); i++)
-        f_p1.set(i,c1.get_Rcoords()->at(i));
-    f_c1.push_back(f_p1);
+    Fred_Points f_p1_arr(c1.get_filtered_coords()->size(),1);
+    for(int i=0; i < c1.get_filtered_coords()->size(); i++){
+        Fred_Point f_p1 = Fred_Point(1);
+        f_p1.set(0,c1.get_filtered_coords()->at(i));
+        f_p1_arr.push_back(f_p1);
+    }
 
-    Fred_Point f_p2 = Fred_Point(c2.get_dimension());
-    for(int i=0; i < c2.get_dimension(); i++)
-        f_p2.set(i,c2.get_Rcoords()->at(i));
-    f_c2.push_back(f_p2);
+    Fred_Points f_p2_arr(c2.get_filtered_coords()->size(),1);
+    for(int i=0; i < c2.get_filtered_coords()->size(); i++){
+        Fred_Point f_p2 = Fred_Point(1);
+        f_p2.set(0,c2.get_filtered_coords()->at(i));
+        f_p2_arr.push_back(f_p2);
+    }
+
+    // Construct Fred Curves
+    Fred_Curve f_c1 = Fred_Curve(f_p1_arr,c1.get_id());
+    Fred_Curve f_c2 = Fred_Curve(f_p2_arr,c2.get_id());
 
     //calculate Continuous Frechet Distance using Fred's Algorithm
     return Frechet::Continuous::distance(f_c1, f_c2).value;
@@ -117,7 +121,7 @@ Point *vec_add(const Point &p1, const Point &p2) {
 double approx_factor(double exact, double approx) {
     if(exact == 0 && approx == 0)
         return 1;
-    else if(exact == 0)
+    if(exact == 0)
         return DBL_MAX;
 
     return approx / exact;
