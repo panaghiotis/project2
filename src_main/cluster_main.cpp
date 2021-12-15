@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
      * Dataset is ready and conf parameters read
      */
 
-    Clustering clustering(&input_dataset, method_for_kmeans);
+    Clustering clustering(&input_dataset, method_for_kmeans, update_for_kmeans);
     cout << "Performing kMeans..." << endl;
     double dt = clustering.perform_kMeans(num_clusters, M, probes);
     cout << "Finished kMeans" << endl;
