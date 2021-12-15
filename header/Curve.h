@@ -24,6 +24,7 @@ public:
     void R_Grid_hash(double &t);                //Grid hash function for Continuous Frechet
     void R_Filtering();                         //Filtering curves for Continuous Frechet
     void R2_Filtering(unsigned int endfilt);    //Filtering Mean Curves for Clustering
+    void Remove_duplicates();                   //only removing duplicates just for Clustering. For search duplicates are removed by Grid_hash
     vector<vector<double>> *get_grid_coords();
     vector<pair<double,double>> *get_curve_coords();
     vector<double> *get_Rcoords();
@@ -31,7 +32,7 @@ public:
     string get_id();
     int get_dimension();
     //set_dimension();
-    void set_C(Curve *curve, int mean_size);        //for clustering
+    void set_C(int mean_size);        //for clustering
     void print(bool isCont = false);
 };
 

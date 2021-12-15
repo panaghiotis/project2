@@ -42,26 +42,19 @@ struct Cluster {
     vector<long double> points_silhouette;
     Centroid *centroid;
     /*Mean_Curve*/Curve *meanCurve;
-    unordered_map<string, long double **> backtrack_map;
+    //unordered_map<string, long double **> backtrack_map;
     vector<Curve *> *meanTree;
-    Cluster(Centroid *c) : centroid(c) {}
-    Cluster(/*Mean_*/Curve *c) : meanCurve(c) {}
+    Cluster(Centroid *c) : centroid(c) {meanCurve = NULL; meanTree = NULL;}
+    Cluster(/*Mean_*/Curve *c) : meanCurve(c) {centroid = NULL;}
     void add(Point *p);
+    void addCurve(Curve *c);
     void clear_cluster();
     pair<Centroid *, long double> recalculate_centroid(unsigned int dim);
-
-    //set the array for later optimal traversal
-    void set_backtrack(Curve *curve, int mean_size);
-
-    //optimal traversal computation
-    vector<pair< pair<double,double>, pair<double,double> >> *OptimalTraversal(Curve *c, Curve *centroid);
-
-    //size is cluster size for tree height computation
-    void initialize_tree();
+    //void set_backtrack(Curve *curve);                               //set the array for later optimal traversal
+    vector<pair< pair<double,double>, pair<double,double> >> *OptimalTraversal(Curve *c, Curve *centroid); //optimal traversal computation
+    int initialize_tree();                                         //Tree initialisation
+    /*Mean_Curve **/int PostOrderTraversal(int node, int leaves_places); //Tree traversal. Leaves places is where the final leave is in tree
     pair</*Mean_*/Curve *, long double> recalculate_meanCurve();
-
-    //Tree traversal
-    /*Mean_Curve **/int PostOrderTraversal(int node);
 
     ~Cluster();
 };
@@ -82,11 +75,13 @@ public:
     Clustering(Dataset *data, int method = CLASSIC, int update = MEAN_VECTOR) : data(data), method(method), update(update), search_functions(*data,*data) {}
     ~Clustering();
     double perform_kMeans(unsigned int k, unsigned int M, unsigned int probes);   // k is number of clusters
-    //double perform_R2kMeans(unsigned int k);                                      // k is number of clusters
+    double perform_R2kMeans(unsigned int k);                                      // k is number of clusters
     const vector<Cluster *> &get_clusters() const { return clusters; }
     vector<long double> get_silhouette() const { return this->silhouette; }
-    double initialize_radius();     //TODO: radius for curves
-    void calculate_silhouette();    //TODO: silhouette for curves
+    double initialize_radius();
+    double initialize_radiusR2();           //radius for curves
+    void calculate_silhouette();
+    void calculate_silhouetteR2();          //silhouette for curves
 };
 
 
