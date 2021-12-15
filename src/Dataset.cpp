@@ -21,14 +21,14 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
         }
         if(isFrechet) {
             if (!isCont) {
-                vector<pair<int, double>> *curve_coords = new vector<pair<int, double>>;
-                pair<int, double> coord_2d;
+                vector<pair<double, double>> *curve_coords = new vector<pair<double, double>>;
+                pair<double, double> coord_2d;
                 for (int i = 0; i < coords->size(); i++) {
                     coord_2d.first = i + 1;
                     coord_2d.second = coords->at(i);
                     curve_coords->push_back(coord_2d);
                 }
-                curves.push_back(new Curve(coords->size(), ID, curve_coords));
+                curves.push_back(new Curve(curve_coords,coords->size(), ID));
 
                 //Grid hash and save in 1d LSH as new points only used for saving curves
                 //curves.at(curves.size() - 1)->Grid_hash();
@@ -39,7 +39,7 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
             } else {
                 dim = coords->size();   // should be the same for every curve
                 //cout << coords->at(0) << endl;
-                curves.push_back(new Curve(dim,ID,NULL,coords));
+                curves.push_back(new Curve(NULL,dim,ID,coords));
                 curves.at(curves.size()-1)->R_Filtering();
                 //curves.at(curves.size()-1)->print(true);
             }

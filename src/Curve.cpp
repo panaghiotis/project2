@@ -14,7 +14,7 @@ extern double delta; // 0.1 or 0.01
 //default_random_engine generator_2d = default_random_engine(time(NULL));
 
 
-Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords, vector<double> *ccurve_coords) {
+Curve::Curve(vector<pair<double, double>> *curve_coords,int dim, string name, vector<double> *ccurve_coords) {
     this->y_dim = dim;
     this->id = name;
     this->e = 0.7;
@@ -22,6 +22,8 @@ Curve::Curve(int dim, string name, vector<pair<int, double>> *curve_coords, vect
     this->R_coords = ccurve_coords;
     this->coords_arr = new vector<vector<double>>();
     this->filtered_coords = new vector<double>();
+    this->C = NULL;
+
 }
 
 Curve::~Curve() {
@@ -31,6 +33,11 @@ Curve::~Curve() {
     if(this->R_coords != NULL)
         delete this->R_coords;
     delete this->filtered_coords;
+    if(this->C != NULL) {
+        for(int i = 0; i < sizeof(this->C) / sizeof(this->C[0]) ;++i)
+            delete[] this->C[i];
+        delete[] C;
+    }
 }
 
 void Curve::Grid_hash(double **t) {
@@ -44,7 +51,7 @@ void Curve::Grid_hash(double **t) {
     vector<pair<double,double>> snapping_arr;
     pair<double,double> xy;
     for(int i = 0 ; i < this->y_dim ; i++) {
-        double x = (double) this->R2_coords->at(i).first;
+        double x = this->R2_coords->at(i).first;
         double y = this->R2_coords->at(i).second;
 
         // snap x and y
@@ -89,6 +96,37 @@ void Curve::Grid_hash(double **t) {
     //free memory
 //    for(int i = 0; i < 2; i++)
 //        delete[] t;
+}
+
+void Curve::R2_Filtering(unsigned int endfilt) {
+    //if mean curve is smaller than max mean curve length don't filter
+    if(this->R2_coords->size() <= endfilt)
+        return;
+
+    // get R2 coordinates
+    vector<pair<double,double>> temp_coords;
+    for(int i=0; i < this->R2_coords->size(); i++)
+        temp_coords.push_back(this->R2_coords->at(i));
+
+    // filter coordinates
+    for(int i=0; i < temp_coords.size(); i++) {
+        if(temp_coords.size() <= endfilt)       //max mean curve length
+            break;
+        if( i < temp_coords.size() - 2) {
+            // |a-b| <= ε and |b-c| <= ε ,remove b
+            if(abs(temp_coords.at(i).second - temp_coords.at(i+1).second) <= this->e && abs(temp_coords.at(i+1).second - temp_coords.at(i+2).second) <= this->e) {
+                temp_coords.erase(temp_coords.begin()+(i+1));
+
+                //check i again with i+2 next to it this time
+                i = i - 1;
+            }
+        }
+    }
+    //save filtered coordinates
+    this->R2_coords->clear();
+    for(int i=0; i < temp_coords.size(); i++) {
+        this->R2_coords->push_back(temp_coords.at(i));
+    }
 }
 
 void Curve::R_Filtering() {
@@ -169,7 +207,7 @@ vector<vector<double>> *Curve::get_grid_coords() {
     return this->coords_arr;
 }
 
-vector<pair<int, double>> *Curve::get_curve_coords() {
+vector<pair<double, double>> *Curve::get_curve_coords() {
     return this->R2_coords;
 }
 
@@ -187,6 +225,14 @@ string Curve::get_id() {
 
 int Curve::get_dimension() {
     return this->y_dim;
+}
+
+//for clustering
+void Curve::set_C(Curve *curve, int mean_size) {
+    //initialize c(i,j) for optimal traversal
+    this->C = new long double*[curve->get_curve_coords()->size()];
+    for(int i = 0; i < curve->get_curve_coords()->size(); ++i)
+        this->C[i] = new long double[mean_size];
 }
 
 void Curve::print(bool isCont) {

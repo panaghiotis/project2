@@ -69,6 +69,48 @@ void Clustering::initialize_clusters(unsigned int k) {    // initialization++
     }
 }
 
+void Clustering::initialize_R2clusters(unsigned int k) {
+    // Step 1: pick uniformly random point in data:
+    srand(time(NULL));  // seed
+    int indx = rand() % data->get_size();
+    /*Mean_*/Curve *c = new /*Mean_*/Curve(create_copy(*data->curves[indx]->get_curve_coords()));
+    meanCurves.push_back(c);
+    clusters.push_back(new Cluster(c));
+
+    unordered_set<unsigned int> ignore_indexes;
+    ignore_indexes.insert(indx);
+
+    // Step 2-k: choose the other centers by chance depending on their distance from already selected centers
+    for (int j = 1 ; j < k ; j++) {
+        vector<long double> D;
+        D.reserve(data->curves.size());
+        // calculate D(i) for each unassigned point i
+        for (int i = 0 ; i < data->curves.size() ; i++) {
+            if (ignore_indexes.find(i) != ignore_indexes.end()) {   // if index already picked
+                D.push_back(0.0);                                   // assign zero probabilty
+            } else {
+                long double minDist = FLT_MAX;
+                for (int z = 0 ; z < j ; z++) {    // for already picked centroids
+                    long double dist = discreteFrechet_distance(*data->curves[i]->get_curve_coords(), *meanCurves[z]->get_curve_coords());
+                    if (dist < minDist) {
+                        minDist = dist;
+                    }
+                }
+                D.push_back(pow(minDist, 2));    // no need to normalize, dist does it for us, only put D(i)^2
+            }
+        }
+        // create discrete dist based on D(i)
+        discrete_distribution<size_t> dist{D.begin(), D.end()};
+        // assign new centroid
+        unsigned int selected_index = dist(generator);
+        ignore_indexes.insert(selected_index);                 // ignore this in the future
+        c = new /*Mean_*/Curve(create_copy(*data->curves[selected_index]->get_curve_coords()));
+        // add to clusters
+        meanCurves.push_back(c);
+        clusters.push_back(new Cluster(c));
+    }
+}
+
 
 double Clustering::perform_kMeans(unsigned int k, unsigned int M, unsigned int probes) {
     chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -279,7 +321,7 @@ double Clustering::perform_kMeans(unsigned int k, unsigned int M, unsigned int p
 
         // stop if centroids didn't change much
         cout << "Total change: " << total_change << endl;
-        if (total_change < CENTROID_CHANGE_THRESHOLD) {    // should be decreasing
+        if (total_change < /*CENTROID_CHANGE_THRESHOLD*/5.0) {    // should be decreasing
             break;
         }
         if( method == USE_RANGE_LSH || method == USE_HYPERCUBE)
@@ -318,6 +360,22 @@ double Clustering::perform_kMeans(unsigned int k, unsigned int M, unsigned int p
     return chrono::duration_cast<chrono::seconds>(end - begin).count();
 }
 
+Cluster::~Cluster() {
+    if(centroid != NULL)
+        delete centroid;
+    if(meanCurve != NULL)
+        delete meanCurve;
+    if(meanTree != NULL)
+        delete meanTree;
+//    if(!backtrack_map.empty()) {
+//        for(auto j = backtrack_map.begin(); j != backtrack_map.end(); j++){
+//            for(int i = 0; i < (sizeof(j->second) / sizeof(j->second[0])) ;++i)
+//                delete[] j->second[i];
+//            delete[] j->second;
+//        }
+//    }
+}
+
 void Cluster::add(Point *p) {
     points.push_back(p);
     //point_map[p->id] = p;
@@ -325,8 +383,14 @@ void Cluster::add(Point *p) {
 }
 
 void Cluster::clear_cluster() {
-    points.clear();
-    point_map.clear();
+    if(!points.empty())
+        points.clear();
+    if(!curves.empty())
+        curves.clear();
+    if(!point_map.empty())
+        point_map.clear();
+    if(!curve_map.empty())
+        curve_map.clear();
 }
 
 pair<Centroid *, long double> Cluster::recalculate_centroid(unsigned int dim) {
@@ -336,6 +400,154 @@ pair<Centroid *, long double> Cluster::recalculate_centroid(unsigned int dim) {
     long double change = 0.0;
     if (new_centroid != NULL) {
         change = used_distance(*centroid, *new_centroid);
+    }
+    return make_pair(new_centroid, change);
+}
+
+void Cluster::set_backtrack(Curve *curve, int mean_size) {
+//    //initialize c(i,j) for optimal traversal
+//    long double **Mean_c = new long double*[curve->get_curve_coords()->size()];
+//    for(int i = 0; i < curve->get_curve_coords()->size(); ++i)
+//        Mean_c[i] = new long double[mean_size];
+
+    //set it to backtracking map with its curve
+    backtrack_map[curve->get_id()] = /*Mean_c*/meanCurve->C;
+}
+
+vector<pair< pair<double,double>, pair<double,double> >> *Cluster::OptimalTraversal(/*Mean_*/Curve *c, /*Mean_*/Curve *centroid) {
+    //traversal is an empty list of pairs
+    vector<pair< pair<double,double>, pair<double,double> >> *traversal;
+
+    //initialization for traversal
+    int P_i, Q_i;
+    P_i = c->get_curve_coords()->size() -1;
+    Q_i = centroid->get_curve_coords()->size() -1;
+    pair <double, double> p, q;
+    pair<pair <double, double>, pair <double, double> > p_q;
+    p = c->get_curve_coords()->at(P_i);
+    q = centroid->get_curve_coords()->at(Q_i);
+    p_q.first = p;
+    p_q.second = q;
+
+    //first value set
+    traversal->push_back(p_q);
+
+    //loop until one of those curves end their traversal
+    while(P_i && Q_i) {
+        //minIdx = index of min([Pi − 1, Qi], C[Pi, Qi − 1], C[Pi − 1, Qi − 1])
+        int minInd;
+
+        // corner case: when we compute mean curve with old centroid and our curves (We already have the C array)
+        if(c->get_id() != "") {
+            if(backtrack_map[c->get_id()][P_i - 1][Q_i] <= backtrack_map[c->get_id()][P_i][Q_i - 1]) {
+                if(backtrack_map[c->get_id()][P_i - 1][Q_i] < backtrack_map[c->get_id()][P_i - 1][Q_i - 1])
+                    minInd = 0;
+                else
+                    minInd = 2;
+            } else {
+                if(backtrack_map[c->get_id()][P_i][Q_i - 1] < backtrack_map[c->get_id()][P_i - 1][Q_i - 1])
+                    minInd = 1;
+                else
+                    minInd = 2;
+            }
+        } else {
+            if(centroid->C[P_i - 1][Q_i] <= centroid->C[P_i][Q_i - 1]) {
+                if(centroid->C[P_i - 1][Q_i] < centroid->C[P_i - 1][Q_i - 1])
+                    minInd = 0;
+                else
+                    minInd = 2;
+            } else {
+                if(centroid->C[P_i][Q_i - 1] < centroid->C[P_i - 1][Q_i - 1])
+                    minInd = 1;
+                else
+                    minInd = 2;
+            }
+        }
+        if(!minInd) {
+            --P_i;
+            p = c->get_curve_coords()->at(P_i);
+            q = centroid->get_curve_coords()->at(Q_i);
+            p_q.first = p;
+            p_q.second = q;
+            traversal->push_back(p_q);
+        } else if(minInd == 1) {
+            --Q_i;
+            p = c->get_curve_coords()->at(P_i);
+            q = centroid->get_curve_coords()->at(Q_i);
+            p_q.first = p;
+            p_q.second = q;
+            traversal->push_back(p_q);
+        } else {
+            --P_i;
+            --Q_i;
+            p = c->get_curve_coords()->at(P_i);
+            q = centroid->get_curve_coords()->at(Q_i);
+            p_q.first = p;
+            p_q.second = q;
+            traversal->push_back(p_q);
+        }
+    }
+
+    //traversal is reversed. Mean curve will not be!
+    return traversal;
+}
+
+void Cluster::initialize_tree() {
+    srand(time(NULL));  // seed
+
+    //compute height of tree ceiling of lg(size of cluster)
+    unsigned int size = curves.size();
+    unsigned int h = ceil(log2(size));
+
+    //find size of tree
+    int tree_size = pow(2,(h+1)) -1;
+    //cout << "tree size= " << tree_size << "curves size= " << size << endl;
+
+    //initialize tree
+    meanTree = new vector<Curve *>(tree_size);
+    for(int i=0; i < meanTree->size(); i++)
+        meanTree->push_back(NULL);
+
+    //initialize tree leaves randomly
+    for(int i = tree_size -1; i >= (tree_size - size); i--){
+        int indx = rand() % size;
+        Curve *leaf = vec_avg_curve(*OptimalTraversal(meanCurve,curves[indx]));
+        meanTree->at(i) = leaf;
+    }
+}
+
+//implementation of BS tree is structured on array of Curves
+int Cluster::PostOrderTraversal(int node) {
+    //if node is leaf
+    if(node >= (meanTree->size() - node) )
+        return node;
+    else {
+        int leftNode = PostOrderTraversal((2*node)+1);
+        int rightNode = leftNode+1;
+        if(rightNode < meanTree->size()) { //if right node isn't empty
+            rightNode = PostOrderTraversal(rightNode);
+            meanTree->at(rightNode)->set_C(meanTree->at(leftNode),(meanTree->at(rightNode)->get_curve_coords()->size() - 1));
+            double distance = discreteFrechet_distance(*meanTree->at(leftNode)->get_curve_coords(),*meanTree->at(rightNode)->get_curve_coords(),meanTree->at(rightNode));
+            Curve *nodeCurve = vec_avg_curve(*OptimalTraversal(meanTree->at(leftNode),meanTree->at(rightNode)));
+            return node;
+        }
+        else {
+            //Mean Curve only for the existing node so just go back to parent with this value
+            meanTree->at(node) = meanTree->at(leftNode);
+            return node;
+        }
+    }
+}
+
+pair</*Mean_*/Curve *, long double> Cluster::recalculate_meanCurve() {
+    //initialize binary tree and do PostTraversal order to get new mean curve(centroid)
+    initialize_tree();
+    Curve *new_centroid = meanTree->at(PostOrderTraversal(0)); //0 because our root is the new centroid
+
+    // calculate change
+    long double change = 0.0;
+    if (new_centroid != NULL) {
+        change = discreteFrechet_distance(*meanCurve->get_curve_coords(), *new_centroid->get_curve_coords());
     }
     return make_pair(new_centroid, change);
 }
@@ -482,3 +694,5 @@ void Clustering::calculate_silhouette() {
         this->silhouette.push_back(total_silhouette);
     }
 }
+
+

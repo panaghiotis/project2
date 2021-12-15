@@ -38,13 +38,14 @@ long double euclidean2d_distance(pair<int,double> p, pair<int,double> q) {
     return sqrt(sum);
 }
 
-long double discreteFrechet_distance(vector<pair<int,double>> p, vector<pair<int,double>> q) {
+long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<double,double>> q, Curve *curve) {
     long double result = 0.0;
 
     //c(i,j) initialization
     long double **c = new long double*[p.size()];
     for(int i = 0; i < p.size(); ++i)
-        c[i] = new long double[p.size()];
+        //c[i] = new long double[p.size()];
+        c[i] = new long double[q.size()];
     //computing the DFD
 
     // fill the first value with the distance between the first two points in p and q
@@ -63,6 +64,20 @@ long double discreteFrechet_distance(vector<pair<int,double>> p, vector<pair<int
 
     //get discrete frechet distance
     result= c[p.size()-1][q.size()-1];
+
+    //keep c(i,j) for optimal traversal if we are doing clustering
+    if(curve != NULL) {
+        //initialize c(i,j) for optimal traversal
+       // Mean_c = new long double*[p.size()];
+       // for(int i = 0; i < p.size(); ++i)
+       //     Mean_c[i] = new long double[q.size()];
+
+        //load c(i,j) for optimal traversal
+        for(int i=0; i < p.size(); i++)
+            for(int j= 0; j < q.size(); j++) {
+                curve->C[i][j] = c[i][j];
+            }
+    }
 
     for(int i = 0; i < p.size();++i)
         delete[] c[i];
@@ -151,6 +166,30 @@ Centroid *vec_avg(vector<Point *> &points, unsigned int dim) {
         (*sums)[j] /= ((double) points.size());
     }
     return new Centroid(sums);
+}
+
+Curve *vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> &reverse_traversal) {
+    vector<pair<double,double>> *new_coords = new vector <pair<double,double>>(reverse_traversal.size());
+    pair<double,double> new_coord;
+    double sum_x, sum_y;
+
+    for(int i = (reverse_traversal.size() - 1); i >= 0; i--) {
+        //curve on x
+        sum_x = reverse_traversal.at(i).first.first + reverse_traversal.at(i).second.first;
+        sum_x = sum_x / 2 ;
+
+        //curve on y
+        sum_y = reverse_traversal.at(i).first.second + reverse_traversal.at(i).second.second;
+        sum_y = sum_y / 2 ;
+
+        //set and load new mean curve coordinate
+        new_coord.first = sum_x;
+        new_coord.second = sum_y;
+        new_coords->push_back(new_coord);
+    }
+
+    //return new Mean Curve for tree traversal
+    return new /*Mean_*/Curve(new_coords);
 }
 
 ostream& operator<<(ostream& os, const Point& p) {
