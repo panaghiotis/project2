@@ -169,6 +169,10 @@ Centroid *vec_avg(vector<Point *> &points, unsigned int dim) {
 }
 
 Curve *vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> &reverse_traversal) {
+
+    //cout << "vec avg:" << endl;
+    //cout << "(" << reverse_traversal.at(0).first.first << " , " << reverse_traversal.at(0).first.second << "), (" << reverse_traversal.at(0).second.first << " , " << reverse_traversal.at(0).second.second <<")" <<endl;
+
     vector<pair<double,double>> *new_coords = new vector <pair<double,double>>(reverse_traversal.size());
     pair<double,double> new_coord;
     double sum_x, sum_y;
@@ -188,8 +192,16 @@ Curve *vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> &r
         new_coords->push_back(new_coord);
     }
 
+//    cout << "---------------------------------------------------------------------------" << endl;
+//    for(int i=0; i < new_coords->size(); i++)
+//        cout << "( "<< new_coords->at(i).first << " , " << new_coords->at(i).second << "), " <<endl;
+//    cout << endl;
     //return new Mean Curve for tree traversal
+    //Curve *c = new Curve(new_coords);
+    //cout<< "vec avg----------------------------------------------------" << endl;
+    //c->print();
     return new /*Mean_*/Curve(new_coords);
+    //return c;
 }
 
 ostream& operator<<(ostream& os, const Point& p) {

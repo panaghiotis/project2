@@ -558,6 +558,41 @@ list<Point*> NearestNeighboursSearch::LSH_search(long double r, Point *q, bool u
     return result;
 }
 
+list<Curve*> NearestNeighboursSearch::LSH_searchR2(long double r, Curve *q, bool use_query_trick) {
+    list<Curve *> result;
+    // calculate only specific distances according to LSH
+
+    //Grid query curves and get R coords
+    for (int j = 0 ; j < index_dataset.get_hashtables_count(); j++) {
+        q->Grid_hash(index_dataset.get_Fr_t_of_htable(j));
+    }
+
+    //make a vector of points for each curve
+    vector<Point *> points_q;
+    for (int j=0 ; j < index_dataset.get_hashtables_count(); j++)
+        points_q.push_back(new Point(&q->get_grid_coords()->at(j),q->get_id(),-1,q));
+
+    //search L Grids
+    for (int n = 0; n < index_dataset.get_hashtables_count(); n++) {            // L buckets
+        Point *p1 = points_q.at(n);
+        unordered_set<string> seen;                                           // multiple hash tables -> may find an element multiple times
+        Bucket *bucket = index_dataset.get_bucket_for_curve(p1,n);
+        for (int z = 0; z < bucket->points.size(); z++) {                   // might be empty
+            const Point *p2 = bucket->points[z];
+            if (!use_query_trick || (p1->hashed && p2->hashed && p1->hashed_ID == p2->hashed_ID)) {     // query trick
+                if (seen.find(p2->id) == seen.end()) {                                               // if not already seen this point
+                    if (used_distance(*p1, *p2, true) < r) {                            // if in range
+                        result.push_back(p2->curve);
+                    }
+                    seen.insert(p2->id);
+                }
+            }
+        }
+        //delete bucket;
+    }
+    return result;
+}
+
 
 list<Point*> NearestNeighboursSearch::cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q) {
     // Base case

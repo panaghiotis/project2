@@ -98,34 +98,45 @@ void Curve::Grid_hash(double **t) {
 //        delete[] t;
 }
 
+void Curve::Remove_duplicates() {
+    // remove consecutive duplicates and do padding for each duplicate you remove
+//    int snapped_size = snapping_arr.size();
+//    pair<double,double> padding_num;
+//    padding_num.first = DBL_MAX;                //LDBL_MAX
+//    padding_num.second = DBL_MAX;
+    //int snapped_size = this->R2_coords->size();
+    for(int i=0; i < this->R2_coords->size() ; i++) {
+        //if(snapping_arr.at(i) == padding_num)
+        //    break;
+        //else {
+            if(i != (this->R2_coords->size()-1) && this->R2_coords->at(i) == this->R2_coords->at(i+1)) {
+                this->R2_coords->erase(this->R2_coords->begin()+i);
+                //padding
+               // this->R2_coords->push_back(padding_num);
+                //check xy in i position again since we erased previous duplicate in position i
+                i = i-1;
+            }
+        //}
+    }
+}
+
 void Curve::R2_Filtering(unsigned int endfilt) {
     //if mean curve is smaller than max mean curve length don't filter
     if(this->R2_coords->size() <= endfilt)
         return;
 
-    // get R2 coordinates
-    vector<pair<double,double>> temp_coords;
-    for(int i=0; i < this->R2_coords->size(); i++)
-        temp_coords.push_back(this->R2_coords->at(i));
-
     // filter coordinates
-    for(int i=0; i < temp_coords.size(); i++) {
-        if(temp_coords.size() <= endfilt)       //max mean curve length
+    for(int i=0; i < this->R2_coords->size(); i++) {
+        if(this->R2_coords->size() <= endfilt)       //max mean curve length
             break;
-        if( i < temp_coords.size() - 2) {
+        if( i < this->R2_coords->size() - 2) {
             // |a-b| <= ε and |b-c| <= ε ,remove b
-            if(abs(temp_coords.at(i).second - temp_coords.at(i+1).second) <= this->e && abs(temp_coords.at(i+1).second - temp_coords.at(i+2).second) <= this->e) {
-                temp_coords.erase(temp_coords.begin()+(i+1));
-
+            if(abs(this->R2_coords->at(i).second - this->R2_coords->at(i+1).second) <= this->e && abs(this->R2_coords->at(i+1).second - this->R2_coords->at(i+2).second) <= this->e) {
+                this->R2_coords->erase(this->R2_coords->begin()+(i+1));
                 //check i again with i+2 next to it this time
                 i = i - 1;
             }
         }
-    }
-    //save filtered coordinates
-    this->R2_coords->clear();
-    for(int i=0; i < temp_coords.size(); i++) {
-        this->R2_coords->push_back(temp_coords.at(i));
     }
 }
 
@@ -228,16 +239,18 @@ int Curve::get_dimension() {
 }
 
 //for clustering
-void Curve::set_C(Curve *curve, int mean_size) {
+void Curve::set_C(int mean_size) {
     //initialize c(i,j) for optimal traversal
-    this->C = new long double*[curve->get_curve_coords()->size()];
-    for(int i = 0; i < curve->get_curve_coords()->size(); ++i)
+    //cout << "mean size: " << mean_size <<endl;
+    this->C = new long double*[this->get_curve_coords()->size()];
+    for(int i = 0; i < this->get_curve_coords()->size(); ++i)
         this->C[i] = new long double[mean_size];
 }
 
 void Curve::print(bool isCont) {
     if(!isCont)
-        cout << "id: " << id << " - 1st coord: " << R2_coords->at(0).first <<" "<< R2_coords->at(0).second << endl;
+        for(int i=0; i < 5 ; i++)
+            cout << "id: " << id << i <<" -coords: " << R2_coords->at(i).first <<" "<< R2_coords->at(i).second << endl;
     else {
         cout << "id: " << id << " - 1st coord: " << R_coords->at(0) << " - second coord: " << R_coords->at(1) << endl;
         //cout << "Filtered id: " << id << " - 1st coord: " << filtered_coords->at(0) << " - second coord: " << filtered_coords->at(1) << endl;
