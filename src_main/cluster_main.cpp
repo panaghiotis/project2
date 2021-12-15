@@ -86,9 +86,9 @@ int main(int argc, char **argv) {
 
     int update_for_kmeans;
     if (method_for_kmeans == CLASSIC) {
-        if(update == "Mean Frechet") {
+        if(update == "Mean_Frechet") {
             update_for_kmeans = MEAN_FRECHET;
-        } else if(update == "Mean Vector") {
+        } else if(update == "Mean_Vector") {
             update_for_kmeans = MEAN_VECTOR;
         }
         else {
@@ -96,10 +96,10 @@ int main(int argc, char **argv) {
             update_for_kmeans = MEAN_VECTOR;
         }
     } else if (method_for_kmeans == USE_RANGE_LSH) {
-        if(update == "Mean Frechet") {
+        if(update == "Mean_Frechet") {
             cerr << "Cannot update LSH Vector kMeans with Frechet! Default is Mean Vector" << endl;
             update_for_kmeans = MEAN_VECTOR;
-        } else if(update == "Mean Vector") {
+        } else if(update == "Mean_Vector") {
             update_for_kmeans = MEAN_VECTOR;
         }
         else {
@@ -107,10 +107,10 @@ int main(int argc, char **argv) {
             update_for_kmeans = MEAN_VECTOR;
         }
     } else if (method_for_kmeans == USE_HYPERCUBE) {
-        if(update == "Mean Frechet") {
+        if(update == "Mean_Frechet") {
             cerr << "Cannot update Hypercube kMeans with Frechet! Default is Mean Vector" << endl;
             update_for_kmeans = MEAN_VECTOR;
-        } else if(update == "Mean Vector") {
+        } else if(update == "Mean_Vector") {
             update_for_kmeans = MEAN_VECTOR;
         }
         else {
@@ -118,9 +118,9 @@ int main(int argc, char **argv) {
             update_for_kmeans = MEAN_VECTOR;
         }
     } else if (method_for_kmeans == USE_LSH_FRECHET) {
-        if(update == "Mean Frechet") {
+        if(update == "Mean_Frechet") {
             update_for_kmeans = MEAN_FRECHET;
-        } else if(update == "Mean Vector") {
+        } else if(update == "Mean_Vector") {
             cerr << "Cannot update LSH Frechet kMeans with Mean Vector! Default is Mean Frechet" << endl;
             update_for_kmeans = MEAN_FRECHET;
         } else {
@@ -179,13 +179,18 @@ int main(int argc, char **argv) {
     }
 
     // load input dataset
-    Dataset input_dataset(input_stream);
+    Dataset *input_dataset;
+    //Dataset input_dataset(input_stream);
+    if(update_for_kmeans == MEAN_VECTOR)
+        input_dataset = new Dataset(input_stream);
+    else
+        input_dataset = new Dataset(input_stream,true);
     if (method_for_kmeans == USE_RANGE_LSH)
-        input_dataset.index_LSH(input_dataset.get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE);
+        input_dataset->index_LSH(input_dataset->get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE);
     if (method_for_kmeans == USE_HYPERCUBE)
-        input_dataset.index_HyperCube(Dim);
+        input_dataset->index_HyperCube(Dim);
     if(method_for_kmeans == USE_LSH_FRECHET)
-        input_dataset.index_LSH(input_dataset.get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
+        input_dataset->index_LSH(input_dataset->get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
 
     // get configuration file if not given
     if (conf_file.empty()) {
@@ -229,15 +234,22 @@ int main(int argc, char **argv) {
      * Dataset is ready and conf parameters read
      */
 
-    Clustering clustering(&input_dataset, method_for_kmeans, update_for_kmeans);
+    Clustering clustering(input_dataset, method_for_kmeans, update_for_kmeans);
     cout << "Performing kMeans..." << endl;
-    double dt = clustering.perform_kMeans(num_clusters, M, probes);
+    double dt;
+    if(update_for_kmeans == MEAN_VECTOR)
+        dt = clustering.perform_kMeans(num_clusters, M, probes);
+    else
+        dt = clustering.perform_R2kMeans(num_clusters);
     cout << "Finished kMeans" << endl;
     const vector<Cluster *> clusters = clustering.get_clusters();
     cout << "Found " << clusters.size() << " clusters" << endl;
     if(silhouette) {
         cout << "Calculate Silhouette..." << endl;
-        clustering.calculate_silhouette();
+        if(update_for_kmeans == MEAN_VECTOR)
+            clustering.calculate_silhouette();
+        else
+            clustering.calculate_silhouetteR2();
         cout << "Finished calculating Silhouette" << endl;
     }
 
@@ -254,16 +266,34 @@ int main(int argc, char **argv) {
         else
             output_stream << "Algorithm: Lloyd's assignment, Update 2 by Curves (in R^2)" << endl;
     }
-    for (int i = 0; i < clusters.size(); i++) {
-        output_stream << "CLUSTER-" << (i + 1) << " {size: " << clusters[i]->points.size()
-                      << ", centroid: " << *((Point *) clusters[i]->centroid);
-        if (complete) {
-            output_stream << ", points: ";
-            for (int j = 0; j < clusters[i]->points.size(); j++) {
-                output_stream << ((j == 0) ? "" : ", ") << clusters[i]->points[j]->id;
+    if(update_for_kmeans == MEAN_VECTOR) {
+        for (int i = 0; i < clusters.size(); i++) {
+            output_stream << "CLUSTER-" << (i + 1) << " {size: " << clusters[i]->points.size() << ", centroid: " << *((Point *) clusters[i]->centroid);
+            if (complete) {
+                output_stream << ", points: ";
+                for (int j = 0; j < clusters[i]->points.size(); j++) {
+                    output_stream << ((j == 0) ? "" : ", ") << clusters[i]->points[j]->id;
+                }
             }
+            output_stream << "}" << endl;
         }
-        output_stream << "}" << endl;
+    } else {
+        for (int i = 0; i < clusters.size(); i++) {
+            output_stream << "CLUSTER-" << (i + 1) << " {size: " << clusters[i]->curves.size() << ", centroid: ";
+            for(int j=0 ; j < clusters[i]->meanCurve->get_curve_coords()->size(); j++) {
+                output_stream << "(" << clusters[i]->meanCurve->get_curve_coords()->at(j).first << ", "
+                              << clusters[i]->meanCurve->get_curve_coords()->at(j).second << ") ";
+                if(i != clusters[i]->meanCurve->get_curve_coords()->size()-1)
+                    output_stream << ", ";
+            }
+            if (complete) {
+                output_stream << ", curves: ";
+                for (int j = 0; j < clusters[i]->curves.size(); j++) {
+                    output_stream << ((j == 0) ? "" : ", ") << clusters[i]->curves[j]->get_id();
+                }
+            }
+            output_stream << "}" << endl;
+        }
     }
     output_stream << "clustering_time: " << dt << " seconds" << endl;
     if (silhouette) {
@@ -276,6 +306,9 @@ int main(int argc, char **argv) {
 
     // close output stream
     output_stream.close();
+
+    //delete input dataset
+    delete input_dataset;
 
     return 0;
 }
