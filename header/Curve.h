@@ -17,7 +17,8 @@ private:
     vector<vector<double>> *coords_arr;         // coordinates for saving curves in LSH
 
 public:
-    long double **C;
+    //long double **C;
+    //vector<vector<long double>> *C;
     Curve(vector<pair<double,double>> *curve_coords, int dim=0, string name= "",  vector<double> *ccurve_coords = NULL);
     ~Curve();
     void Grid_hash(double **t);                 //Grid hash function for Discrete Frechet
@@ -32,7 +33,8 @@ public:
     string get_id();
     int get_dimension();
     //set_dimension();
-    void set_C(int mean_size);        //for clustering
+    //void set_C(int mean_size);        //for clustering
+    void set_epsilon(int &e);         //for clustering
     void print(bool isCont = false);
 };
 

@@ -39,21 +39,26 @@ struct Cluster {
     vector<Curve *> curves;
     unordered_map<string, Point *> point_map;
     unordered_map<string, Curve *> curve_map;
+    //vector<Curve *> meanTree;
     vector<long double> points_silhouette;
     Centroid *centroid;
     /*Mean_Curve*/Curve *meanCurve;
     //unordered_map<string, long double **> backtrack_map;
-    vector<Curve *> *meanTree;
-    Cluster(Centroid *c) : centroid(c) {meanCurve = NULL; meanTree = NULL;}
+    Cluster(Centroid *c) : centroid(c) {meanCurve = NULL;}
     Cluster(/*Mean_*/Curve *c) : meanCurve(c) {centroid = NULL;}
     void add(Point *p);
     void addCurve(Curve *c);
     void clear_cluster();
     pair<Centroid *, long double> recalculate_centroid(unsigned int dim);
+    void curve_map_to_vec();
     //void set_backtrack(Curve *curve);                               //set the array for later optimal traversal
-    vector<pair< pair<double,double>, pair<double,double> >> *OptimalTraversal(Curve *c, Curve *centroid); //optimal traversal computation
-    int initialize_tree();                                         //Tree initialisation
-    /*Mean_Curve **/int PostOrderTraversal(int node, int leaves_places); //Tree traversal. Leaves places is where the final leave is in tree
+    //vector<pair< pair<double,double>, pair<double,double> >> OptimalTraversal(Curve *c, Curve *centroid); //optimal traversal computation
+    vector<pair< pair<double,double>, pair<double,double> >> OptimalTraversal(vector<pair<double,double>> c, vector<pair<double,double>> centroid);
+    //int initialize_tree();                                         //Tree initialisation
+    void clear_tree();                                             //Tree clear
+    //int PostOrderTraversal(int node, int leaves_places); //Tree traversal. Leaves places is where the final leave is in tree
+    //int PostOrderTraversal(int node, int leaves_places, vector<Curve *> &tree);
+    int PostOrderTraversal(int node, int leaves_places, vector<vector<pair<double,double>>> &tree);
     pair</*Mean_*/Curve *, long double> recalculate_meanCurve();
 
     ~Cluster();

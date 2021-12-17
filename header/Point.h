@@ -17,7 +17,7 @@ struct Point{
     Point(vector<double> *coordinates, string id = "", int pos = -1, Curve *curve = NULL) :
         id(id), coords(coordinates), hashed_ID(-1), hashed(false), pos(pos), curve(curve) {}
     ~Point() {
-        //delete coords;
+        //delete coords; //TODO: make an extern value 0 if it is vector ,1 if it is curves
     }
     void print() const {
         cout << "id:" << id <<endl;
