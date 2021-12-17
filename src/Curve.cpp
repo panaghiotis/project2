@@ -17,12 +17,12 @@ extern double delta; // 0.1 or 0.01
 Curve::Curve(vector<pair<double, double>> *curve_coords,int dim, string name, vector<double> *ccurve_coords) {
     this->y_dim = dim;
     this->id = name;
-    this->e = 0.7;
+    this->e = 1; //TODO: remember to make e global like delta e nn = 0.7 to 1
     this->R2_coords = curve_coords;
     this->R_coords = ccurve_coords;
     this->coords_arr = new vector<vector<double>>();
     this->filtered_coords = new vector<double>();
-    this->C = NULL;
+    //this->C = NULL;
 
 }
 
@@ -33,11 +33,16 @@ Curve::~Curve() {
     if(this->R_coords != NULL)
         delete this->R_coords;
     delete this->filtered_coords;
-    if(this->C != NULL) {
-        for(int i = 0; i < sizeof(this->C) / sizeof(this->C[0]) ;++i)
-            delete[] this->C[i];
-        delete[] C;
-    }
+//    if(this->C != NULL)
+//        delete this->C;
+//    if(this->C != NULL) {
+//        cout << "mpainei?" << endl;
+//        for(int i = 0; i < sizeof(this->C) / sizeof(this->C[0]) ;++i) {
+//            cout << "mpainei edw?" << endl;
+//            delete[] this->C[i];
+//        }
+//        delete[] C;
+//    }
 }
 
 void Curve::Grid_hash(double **t) {
@@ -239,12 +244,16 @@ int Curve::get_dimension() {
 }
 
 //for clustering
-void Curve::set_C(int mean_size) {
-    //initialize c(i,j) for optimal traversal
-    //cout << "mean size: " << mean_size <<endl;
-    this->C = new long double*[this->get_curve_coords()->size()];
-    for(int i = 0; i < this->get_curve_coords()->size(); ++i)
-        this->C[i] = new long double[mean_size];
+//void Curve::set_C(int mean_size) {
+//    //initialize c(i,j) for optimal traversal
+//    //cout << "mean size: " << mean_size <<endl;
+//    this->C = new long double*[this->get_curve_coords()->size()];
+//    for(int i = 0; i < this->get_curve_coords()->size(); ++i)
+//        this->C[i] = new long double[mean_size];
+//}
+
+void Curve::set_epsilon(int &e) {
+    this->e = e;
 }
 
 void Curve::print(bool isCont) {

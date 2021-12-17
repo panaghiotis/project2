@@ -577,11 +577,13 @@ list<Curve*> NearestNeighboursSearch::LSH_searchR2(long double r, Curve *q, bool
         Point *p1 = points_q.at(n);
         unordered_set<string> seen;                                           // multiple hash tables -> may find an element multiple times
         Bucket *bucket = index_dataset.get_bucket_for_curve(p1,n);
+        //if(bucket->points.empty())  //empty bucket => return empty list
+        //    return result;
         for (int z = 0; z < bucket->points.size(); z++) {                   // might be empty
             const Point *p2 = bucket->points[z];
             if (!use_query_trick || (p1->hashed && p2->hashed && p1->hashed_ID == p2->hashed_ID)) {     // query trick
                 if (seen.find(p2->id) == seen.end()) {                                               // if not already seen this point
-                    if (used_distance(*p1, *p2, true) < r) {                            // if in range
+                    if (used_distance(*p1, *p2, true) < r) {  //TODO:discrete frechet                          // if in range
                         result.push_back(p2->curve);
                     }
                     seen.insert(p2->id);
