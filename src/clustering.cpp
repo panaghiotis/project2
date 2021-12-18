@@ -517,7 +517,7 @@ double Clustering::perform_R2kMeans(unsigned int k) {
         if (total_change < CENTROID_CHANGE_THRESHOLD) {
             break;
         }
-        else if ( count > 1 && total_change >= 5.0 ){
+        else if ( count > 5 && total_change >= 5.0 ){
             int break_flag_3 = 0;
             int break_flag_2 = 0;
             for(int i=0; i < clusters.size(); i++) {       // in Frechet mean curves tend to be a lot different after every loop but clusters usually
@@ -703,8 +703,6 @@ vector<pair< pair<double,double>, pair<double,double> >> Cluster::OptimalTravers
 
     //loop until one of those curves end their traversal
     while(P_i && Q_i) {
-        if(traversal.size() >= 1000)
-            break;
         //minIdx = index of min([Pi − 1, Qi], C[Pi, Qi − 1], C[Pi − 1, Qi − 1])
         int minInd;
         if(C[P_i - 1][Q_i] <= C[P_i][Q_i - 1]) {

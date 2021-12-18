@@ -37,13 +37,12 @@ long double euclidean2d_distance(pair<int,double> p, pair<int,double> q) {
     return sqrt(sum);
 }
 
-long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<double,double>> q, Curve *curve) {
+long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<double,double>> q) {
     long double result = 0.0;
 
     //c(i,j) initialization
     long double **c = new long double*[p.size()];
     for(int i = 0; i < p.size(); ++i)
-        //c[i] = new long double[p.size()];
         c[i] = new long double[q.size()];
 
     // fill the first value with the distance between the first two points in p and q
