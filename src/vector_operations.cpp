@@ -15,8 +15,7 @@ using namespace std;
  */
 long double used_distance(const Point &p1, const Point &p2, bool isFrechet) {
     if(isFrechet) {
-        //cout << p1.curve->get_curve_coords()->at(0).first << " " << p1.curve->get_curve_coords()->at(0).second << endl;
-        return discreteFrechet_distance(*p1.curve->get_curve_coords(), *p2.curve->get_curve_coords());
+        return discreteFrechet_distance(*p1.curve->get_curve_coords(), *p2.curve->get_curve_coords()); //use DF distance
     }
     return L2_distance(p1, p2);   // use Euclidean distance
 }
@@ -29,7 +28,7 @@ long double L2_distance(const Point &p1, const Point &p2) {
     return sqrt(sum);
 }
 
-//euclidian distance for Discrete Frechet Distance implementation
+//euclidian(L2) distance for Discrete Frechet Distance implementation
 long double euclidean2d_distance(pair<int,double> p, pair<int,double> q) {
     long double sum = 0.0;
     long double x = p.first - q.first;
@@ -64,31 +63,16 @@ long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<
     //get discrete frechet distance
     result= c[p.size()-1][q.size()-1];
 
-    //keep c(i,j) for optimal traversal if we are doing clustering
-//    if(curve != NULL) {
-//        //cout << "killed here in dist funct?" << endl;
-//        //initialize c(i,j) for optimal traversal
-//       // Mean_c = new long double*[p.size()];
-//       // for(int i = 0; i < p.size(); ++i)
-//       //     Mean_c[i] = new long double[q.size()];
-//        //load c(i,j) for optimal traversal
-//        curve->C = new vector<vector<long double>>(p.size(), vector<long double>(q.size(),0));
-//        //vector<long double> temp;
-//        //vector<vector<long double>> temp2d;
-//        for(int i=0; i < p.size(); i++)
-//            for(int j= 0; j < q.size(); j++) {
-//                //curve->C[i][j] = c[i][j];
-//                curve->C->at(i).at(j) = c[i][j];
-//            }
-//    }
+    //free memory
     for(int i = 0; i < p.size();++i)
         delete[] c[i];
     delete[] c;
 
+    //return distance
     return result;
 }
 
-//return Discrete Frechet C(i,j) array
+//return Discrete Frechet C(i,j) array for clustering
 double** get_C(vector<pair<double,double>> p, vector<pair<double,double>> q){
 
     //c(i,j) initialization
@@ -113,6 +97,7 @@ double** get_C(vector<pair<double,double>> p, vector<pair<double,double>> q){
     return c;
 }
 
+//continuous Frechet distance by Fred
 double continuousFrechet_distanceByFred(Curve &c1, Curve &c2) {
     //set R coordinates of each curve in Fred Curves
     Fred_Points f_p1_arr(c1.get_filtered_coords()->size(),1);
@@ -195,7 +180,8 @@ Centroid *vec_avg(vector<Point *> &points, unsigned int dim) {
     return new Centroid(sums);
 }
 
-vector<pair<double,double>> vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> reverse_traversal) {
+// implements mean curve coordinates of 2 curves
+vector<pair<double,double>> vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> reverse_traversal, double epsilon) {
     vector<pair<double,double>> new_coords(reverse_traversal.size());
     pair<double,double> new_coord;
     double sum_x, sum_y;
@@ -217,11 +203,12 @@ vector<pair<double,double>> vec_avg_curve(vector<pair< pair<double,double>, pair
 
     //return new Mean Curve for tree traversal
 
-    new_coords = filtering(new_coords);
+    new_coords = filtering(new_coords, epsilon);
     return new_coords;
 }
 
-vector<pair<double,double>> filtering(vector<pair<double,double>> R2_coords) { //TODO: epsilon
+//filtering mean curve for clustering
+vector<pair<double,double>> filtering(vector<pair<double,double>> R2_coords, double epsilon) {
     //if mean curve is smaller than max mean curve length don't filter
     if(R2_coords.size() <= MAX_LENGTH)
         return R2_coords;
@@ -232,7 +219,7 @@ vector<pair<double,double>> filtering(vector<pair<double,double>> R2_coords) { /
             break;
         if( i < R2_coords.size() - 2) {
             // |a-b| <= ε and |b-c| <= ε ,remove b
-            if(abs(R2_coords.at(i).second - R2_coords.at(i+1).second) <= 0.1 && abs(R2_coords.at(i+1).second - R2_coords.at(i+2).second) <= 0.1) {
+            if(abs(R2_coords.at(i).second - R2_coords.at(i+1).second) <= epsilon && abs(R2_coords.at(i+1).second - R2_coords.at(i+2).second) <= epsilon) {
                 R2_coords.erase(R2_coords.begin()+(i+1));
                 //check i again with i+2 next to it this time
                 i = i - 1;
@@ -242,42 +229,6 @@ vector<pair<double,double>> filtering(vector<pair<double,double>> R2_coords) { /
     //get filtered coordinates
     return R2_coords;
 }
-
-
-
-//Curve *vec_avg_curve(vector<pair< pair<double,double>, pair<double,double> >> reverse_traversal) {
-//
-//    //cout << "vec avg:" << endl;
-//    //cout << "(" << reverse_traversal.at(0).first.first << " , " << reverse_traversal.at(0).first.second << "), (" << reverse_traversal.at(0).second.first << " , " << reverse_traversal.at(0).second.second <<")" <<endl;
-//
-//    vector<pair<double,double>> *new_coords = new vector <pair<double,double>>(reverse_traversal.size());
-//    pair<double,double> new_coord;
-//    double sum_x, sum_y;
-//
-//    for(int i = (reverse_traversal.size() - 1); i >= 0; i--) {
-//        //curve on x
-//        sum_x = reverse_traversal.at(i).first.first + reverse_traversal.at(i).second.first;
-//        sum_x = sum_x / 2 ;
-//
-//        //curve on y
-//        sum_y = reverse_traversal.at(i).first.second + reverse_traversal.at(i).second.second;
-//        sum_y = sum_y / 2 ;
-//
-//        //set and load new mean curve coordinate
-//        new_coord.first = sum_x;
-//        new_coord.second = sum_y;
-//        new_coords->push_back(new_coord);
-//    }
-//
-//    //return new Mean Curve for tree traversal
-//  //  cout << "before new curve" << endl;
-//    Curve *c = new Curve(new_coords);
-//    c->R2_Filtering(MAX_LENGTH);
-//   // cout << "after new curve: " << c->get_curve_coords()->size() << endl;
-//    //c->print();
-//    //return new /*Mean_*/Curve(new_coords);
-//    return c;
-//}
 
 ostream& operator<<(ostream& os, const Point& p) {
     os << "[ ";

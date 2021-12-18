@@ -31,17 +31,13 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
                 curves.push_back(new Curve(curve_coords,coords->size(), ID));
 
                 //Grid hash and save in 1d LSH as new points only used for saving curves
-                //curves.at(curves.size() - 1)->Grid_hash();
                 dim = 2 * (coords->size());     //TODO: Is that needed?
-                //points.push_back(new Point(curves.at(curves.size() - 1)->get_grid_coords(), ID, i, curves.at(curves.size() - 1)));
                 //free memory
                 delete coords;
             } else {
                 dim = coords->size();   // should be the same for every curve
-                //cout << coords->at(0) << endl;
                 curves.push_back(new Curve(NULL,dim,ID,coords));
                 curves.at(curves.size()-1)->R_Filtering();
-                //curves.at(curves.size()-1)->print(true);
             }
         } else {
             dim = coords->size();   // should be the same for every point
@@ -60,7 +56,6 @@ Dataset::Dataset(ifstream &file, bool isFrechet, bool isCont) : size(0), dim(0) 
 void Dataset::print(bool isFrechet, bool isCont) const {
     if(isFrechet) {
         if(isCont) {
-            //cout << "query curve size: " << curves.size() << endl;
             for(int i=0; i < curves.size(); i++) {
                 curves[i]->print(true);
             }
@@ -90,7 +85,7 @@ Dataset::~Dataset() {
     }
 }
 
-void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont) {
+void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont, int max_len) { //max len is the max length of mean curves
     // init hashtables
     if(isFrechet){
         for (int i = 0 ; i < L ; i++) {
@@ -98,9 +93,13 @@ void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont
 
             // Grid hash for Discrete or Continuous Frechet
             for(int j=0; j < curves.size(); j++) {
-                if(!isCont) // R2 Grid
-                    curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
-                else        // R Grid
+                if(!isCont){// R2 Grid
+                    if(max_len !=0) // we are doing clustering
+                        curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()), max_len);
+                    else
+                        curves.at(j)->Grid_hash((hashTables.at(i)->get_Frechet_t()));
+                }
+                else       // R Grid
                     curves.at(j)->R_Grid_hash(*hashTables.at(i)->get_Frechet_t()[0]);
             }
         }
@@ -108,17 +107,12 @@ void Dataset::index_LSH(unsigned int hashtable_size, bool isFrechet, bool isCont
         // Save into L LSH tables as new points only used for saving curves
         for(int i=0; i < curves.size(); i++) {
             for(int j = 0 ; j < L ; j++){
-                //curves.at(i)->Grid_hash((hashTables.at(j)->get_Frechet_t()));
-                //cout << &curves.at(i)->get_grid_coords()->at(j) <<endl;
                 points.push_back(new Point(&curves.at(i)->get_grid_coords()->at(j), curves.at(i)->get_id(), i, curves.at(i)));
-                //curves.at(i)->print(true);
-                //points.at(points.size()-1)->print();
-                //cout << "same size?: " << points.at(points.size()-1)->coords->size() <<endl;
                 hashTables[j]->hash_and_add(points.at(points.size()-1));
             }
         }
     }
-    else{
+    else{ //curves as points
         // init hashtables
         for (int i = 0 ; i < L ; i++) {
             hashTables.push_back(new HashTable(hashtable_size, k, dim));
