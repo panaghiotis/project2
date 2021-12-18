@@ -24,42 +24,30 @@ struct Centroid : public Point {
         : Point(coordinates, id, pos), silhouette(0.0) {}
 };
 
-//struct Mean_Curve : public Curve {
-//    int max_length;
-//    unordered_map<string,long double **> backtrack_map;
-//    //Mean_Curve(Curve &curve): Curve(curve) {}
-//    Mean_Curve(vector<pair<double,double>> *curve_coords ,int dim = 0, string name = "")
-//        : Curve(dim,name,curve_coords), max_length(MAX_LENGTH) {}
-//    ~Mean_Curve();
-//    void set_backtrack(Curve *curve, int mean_size);    //set the array for later optimal traversal
-//};
-
 struct Cluster {
     vector<Point *> points;
     vector<Curve *> curves;
     unordered_map<string, Point *> point_map;
     unordered_map<string, Curve *> curve_map;
-    //vector<Curve *> meanTree;
     vector<long double> points_silhouette;
     Centroid *centroid;
-    /*Mean_Curve*/Curve *meanCurve;
-    //unordered_map<string, long double **> backtrack_map;
+    Curve *meanCurve;
     Cluster(Centroid *c) : centroid(c) {meanCurve = NULL;}
-    Cluster(/*Mean_*/Curve *c) : meanCurve(c) {centroid = NULL;}
+    Cluster(Curve *c) : meanCurve(c) {centroid = NULL;}
     void add(Point *p);
     void addCurve(Curve *c);
     void clear_cluster();
     pair<Centroid *, long double> recalculate_centroid(unsigned int dim);
-    void curve_map_to_vec();
-    //void set_backtrack(Curve *curve);                               //set the array for later optimal traversal
-    //vector<pair< pair<double,double>, pair<double,double> >> OptimalTraversal(Curve *c, Curve *centroid); //optimal traversal computation
+    void curve_map_to_vec();        // curves vector gets the same curves as curve map (for safety reasons)
+
+     //optimal traversal computation of two curves
     vector<pair< pair<double,double>, pair<double,double> >> OptimalTraversal(vector<pair<double,double>> c, vector<pair<double,double>> centroid);
-    //int initialize_tree();                                         //Tree initialisation
-    void clear_tree();                                             //Tree clear
-    //int PostOrderTraversal(int node, int leaves_places); //Tree traversal. Leaves places is where the final leave is in tree
-    //int PostOrderTraversal(int node, int leaves_places, vector<Curve *> &tree);
+
+    //BST traversal that creates coordinates for new mean curve in root.(Starting from leaves-cluster_curves to root)
     int PostOrderTraversal(int node, int leaves_places, vector<vector<pair<double,double>>> &tree);
-    pair</*Mean_*/Curve *, long double> recalculate_meanCurve();
+
+    //initializes tree with leaves the curves of the cluster.Calls post order BST traversal, gets the root and creates the new mean curve
+    pair<Curve *, long double> recalculate_meanCurve();
 
     ~Cluster();
 };
@@ -68,7 +56,7 @@ struct Cluster {
 class Clustering {
     Dataset *data;
     vector<Centroid *> centroids;
-    vector</*Mean_*/Curve *> meanCurves;
+    vector<Curve *> meanCurves;
     vector<Cluster *> clusters;
     void initialize_clusters(unsigned int k);
     void initialize_R2clusters(unsigned int k);
@@ -80,7 +68,7 @@ public:
     Clustering(Dataset *data, int method = CLASSIC, int update = MEAN_VECTOR) : data(data), method(method), update(update), search_functions(*data,*data) {}
     ~Clustering();
     double perform_kMeans(unsigned int k, unsigned int M, unsigned int probes);   // k is number of clusters
-    double perform_R2kMeans(unsigned int k);                                      // k is number of clusters
+    double perform_R2kMeans(unsigned int k);                                      // k is number of clusters, kMeans for curves in R2
     const vector<Cluster *> &get_clusters() const { return clusters; }
     vector<long double> get_silhouette() const { return this->silhouette; }
     double initialize_radius();

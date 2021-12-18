@@ -5,7 +5,7 @@
 #include "Point.h"
 
 
-#define DEFAULT_W (3*500)  // in [2, 6]?
+#define DEFAULT_W (3*500)  // in [2, 6]? maybe 600 or 700
 #define m 4294967291       // 2^32 - 5
 
 struct Bucket {
@@ -25,7 +25,7 @@ class HashFunction {
 public:
     HashFunction(unsigned int dim, double w = DEFAULT_W);
     ~HashFunction();
-    unsigned int hash(const Point &p) const; // maybe unsigned long??
+    unsigned int hash(const Point &p) const;
 };
 
 
@@ -34,7 +34,7 @@ class HashTable {
     Bucket *buckets;
     vector<unsigned int> r;
     vector<HashFunction *> h;     // h.size() == r.size() == # num of buckets
-    double *t;
+    double *t;                    // this t is for grid hash (t[2] in R2)
 public:
     HashTable(unsigned int size, unsigned int k, unsigned int dim);
     ~HashTable();

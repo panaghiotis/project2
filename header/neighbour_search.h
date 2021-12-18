@@ -39,19 +39,14 @@ public:
     // Note: ended up not using these two
     long long int calculate_exact_distances();
     long long int calculate_only_lsh_distances();      // only calculate distances for same buckets
+
     vector<Result *> *calculate_exact_NN(int k);
-    //TODO: make one function for curves
     vector<Result *> *calculate_exact_NN_curves(bool isCont = false); // for Discrete and Continuous Frechet
-    vector<Result *> *calculate_exact_NN_R2curves();   // for Discrete Frechet
-    vector<Result *> *calculate_exact_NN_Rcurves();    // for Continuous Frechet
     vector<Result *> *calculate_approximate_NN(int k, bool use_query_trick=USE_QUERY_TRICK);
-    //TODO: make one function for curves
     vector<Result *> *calculate_approximate_NN_curves(bool isCont = false, bool use_query_trick=USE_QUERY_TRICK); // for Discrete and Continuous Frechet
-    vector<Result *> *calculate_approximate_NN_R2curves(bool use_query_trick=USE_QUERY_TRICK);   // for Discrete Frechet
-    vector<Result *> *calculate_approximate_NN_Rcurves(bool use_query_trick=USE_QUERY_TRICK);    // for Continuous Frechet
     vector<vector<string> *> *range_search(long double r, bool use_query_trick=USE_QUERY_TRICK);
     list<Point*> LSH_search(long double r, Point *q, bool use_query_trick=USE_QUERY_TRICK);
-    list<Curve*> LSH_searchR2(long double r, Curve *q, bool use_query_trick=USE_QUERY_TRICK);    //range search in R2 curves for clustering
+    list<Curve*> LSH_searchR2(long double r, Curve *q, int max_len = 0 ,bool use_query_trick=USE_QUERY_TRICK);    //range search in R2 curves for clustering
      list<Point *> cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q);
     vector<Result *> *calculate_approximate_NN_using_cube(int k, int probes, int M);
     vector<vector<string> *> *range_search_using_cube(long double r, int probes, int M);
