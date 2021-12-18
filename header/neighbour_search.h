@@ -47,7 +47,7 @@ public:
     vector<vector<string> *> *range_search(long double r, bool use_query_trick=USE_QUERY_TRICK);
     list<Point*> LSH_search(long double r, Point *q, bool use_query_trick=USE_QUERY_TRICK);
     list<Curve*> LSH_searchR2(long double r, Curve *q, int max_len = 0 ,bool use_query_trick=USE_QUERY_TRICK);    //range search in R2 curves for clustering
-     list<Point *> cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q);
+    list<Point *> cube_search(unsigned int M, int probes, int cur_ver, int hamming, long double r, Point *q);
     vector<Result *> *calculate_approximate_NN_using_cube(int k, int probes, int M);
     vector<vector<string> *> *range_search_using_cube(long double r, int probes, int M);
     double approx_get(double exact, double approx);

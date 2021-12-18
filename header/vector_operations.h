@@ -17,7 +17,7 @@ long double L2_distance(const Point &p1, const Point &p2);
 long double euclidean2d_distance(pair<int,double> p, pair<int,double> q);
 
 //Curve *curve(this curve is a mean curve) is only used for saving c array for clustering
-long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<double,double>> q, Curve *curve = NULL);
+long double discreteFrechet_distance(vector<pair<double,double>> p, vector<pair<double,double>> q);
 double** get_C(vector<pair<double,double>> p, vector<pair<double,double>> q);
 
 double continuousFrechet_distanceByFred(Curve &c1, Curve &c2);
