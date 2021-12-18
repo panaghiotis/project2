@@ -13,7 +13,7 @@ unsigned int N = 1;           // number of neighbours to search
 unsigned int M = 0;           // number of points to be checked
 unsigned int probes = 0;      // number of vertices to check
 double delta = 0.0;           //delta for Frechet
-//long double R = 0;            // radius for range search
+double epsilon = 1;        //epsilon for curve filtering
 
 #define LSH 1
 #define HYPERCUBE 2
@@ -24,14 +24,12 @@ double delta = 0.0;           //delta for Frechet
 #define DEFAULT_k 4           // number of hash functions per hash table
 #define DEFAULT_L 5           // number of hash tables
 #define DEFAULT_CONTI_L 1     // L must be 1 for continuous Frechet
-//#define DEFAULT_N 1           // number of nearest neighbours
 #define DEFAULT_CUBE_k 14     // number of dimension d' (also k: number of h)
 #define DEFAULT_M 10          // number of points to be checked
 #define DEFAULT_PR 2          // number of vertices to be checked
 #define DEFAULT_Delta 0.1     // delta number
-//#define DEFAULT_R 10000       // radius for range search
 
-#define DIVIDE_DATASET_FOR_HASHTABLE_SIZE 8      // TODO: Find good value for hashtable size e.g. n / 8
+#define DIVIDE_DATASET_FOR_HASHTABLE_SIZE 8
 
 
 int main(int argc, char **argv) {
@@ -132,8 +130,6 @@ int main(int argc, char **argv) {
     M = atoi(input.getCmdOption("-M").c_str());
     probes = atoi(input.getCmdOption("-probes").c_str());
     delta = atof(input.getCmdOption("-delta").c_str());
-    //N = atoi(input.getCmdOption("-N").c_str());
-    //R = atoi(input.getCmdOption("-R").c_str());
 
     // fall back to defaults if not given
     if ( method == LSH || method == FRECHET && k == 0) k = DEFAULT_k;
@@ -145,8 +141,6 @@ int main(int argc, char **argv) {
     if (M == 0) M = DEFAULT_M;
     if (probes == 0) probes = DEFAULT_PR;
     if(delta == 0.0) delta = DEFAULT_Delta;
-    //if (N == 0) N = DEFAULT_N;
-    //if (R == 0) R = DEFAULT_R;
 
     // get input file if not given
     if (input_file.empty()) {
@@ -171,12 +165,10 @@ int main(int argc, char **argv) {
     else if (method == FRECHET && frechet_metric == DISCRETE)
     {
         input_dataset = new Dataset(input_stream, true);
-        //input_dataset->print(true);
     }
     else if(method == FRECHET && frechet_metric == CONTINUOUS)
     {
         input_dataset = new Dataset(input_stream, true, true);
-        //input_dataset->print(true,true);
     }
     else {cerr<< "Something went wrong with input Dataset!" << endl; return -1;}
     cout << "Indexing input dataset ";
@@ -267,12 +259,10 @@ int main(int argc, char **argv) {
         vector<Result *> *exactResult;
         if(method == FRECHET && frechet_metric == DISCRETE) {
             cout << " with discrete frechet..." << endl;
-            //exactResult = nns.calculate_exact_NN_R2curves();
             exactResult = nns.calculate_exact_NN_curves();
         }
         else if(method == FRECHET && frechet_metric == CONTINUOUS) {
             cout << " with continuous frechet..." << endl;
-            //exactResult = nns.calculate_exact_NN_Rcurves();
             exactResult = nns.calculate_exact_NN_curves(true);
         }
         else {
@@ -292,12 +282,10 @@ int main(int argc, char **argv) {
         }
         else if(method == FRECHET && frechet_metric == DISCRETE){
             cout << "Calculating approximate neighbours using Discrete Frechet..." << endl;
-            //approximateResult = nns.calculate_approximate_NN_R2curves();
             approximateResult = nns.calculate_approximate_NN_curves();
         }
         else if(method == FRECHET && frechet_metric == CONTINUOUS){
             cout << "Calculating approximate neighbours using Continuous Frechet..." << endl;
-            //approximateResult = nns.calculate_approximate_NN_Rcurves();
             approximateResult = nns.calculate_approximate_NN_curves(true);
         }
         else {cerr<< "Something went wrong with approximate nearest neighbor result!" << endl; return -1;}
@@ -309,17 +297,13 @@ int main(int argc, char **argv) {
         cout << "Calculating Max Approximation Factor..." << endl;
         vector<double> factors;
         for(int i=0; i < q_size; i++) {
-            if(/*exactResult->at(i)->NNs->empty() ||*/ approximateResult->at(i)->NNs->empty())
+            if(approximateResult->at(i)->NNs->empty())
                 factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,0));
             else
                 factors.push_back(nns.approx_get(exactResult->at(i)->NNs->at(0).dist,approximateResult->at(i)->NNs->at(0).dist));
         }
         double maf = nns.max_approx_get(factors);
         cout << "Done!" << endl;
-
-//        cout << "Calculating range search using LSH..." << endl;
-//        vector<vector<string> *> *range_search_res = nns.range_search(R);
-//        cout << "Done!" << endl;
 
         for (int i = 0; i < exactResult->size() && i < approximateResult->size() ; i++) {   // for each query point
             Result *exact_res = exactResult->at(i);
@@ -346,12 +330,6 @@ int main(int argc, char **argv) {
             t_approx += apprx_res->dt;
             t_true += exact_res->dt;
 
-//            vector<string> *r_nns = range_search_res->at(i);
-//            output_stream << "R-near neighbours:" << endl;
-//            for (int j = 0; j < r_nns->size(); j++) {
-//                output_stream << r_nns->at(j) << endl;
-//            }
-
             output_stream << endl;
 
             // delete
@@ -359,7 +337,6 @@ int main(int argc, char **argv) {
             delete apprx_res->NNs;
             delete exact_res;
             delete apprx_res;
-            //delete r_nns;
         }
         //count and print average time
         t_approx = t_approx / q_size;
@@ -373,7 +350,6 @@ int main(int argc, char **argv) {
 
         delete exactResult;
         delete approximateResult;
-        //delete range_search_res;
 
         //delete query dataset
         delete query_dataset;

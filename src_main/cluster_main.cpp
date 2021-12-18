@@ -13,7 +13,8 @@ unsigned int k = 4;       // num of hash funcs hi
 unsigned int M = 10;      //M for cube
 unsigned int Dim = 3;     //dimension d' for cube
 unsigned int probes = 2;  //probes for cube
-double delta = 0.0;       //delta for Frechet
+double delta = 2;         //delta for Frechet
+double epsilon = 0.1;    //epsilon for curve filtering
 
 bool complete = false;
 bool  silhouette = false;
@@ -190,7 +191,7 @@ int main(int argc, char **argv) {
     if (method_for_kmeans == USE_HYPERCUBE)
         input_dataset->index_HyperCube(Dim);
     if(method_for_kmeans == USE_LSH_FRECHET)
-        input_dataset->index_LSH(input_dataset->get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true);
+        input_dataset->index_LSH(input_dataset->get_size() / DIVIDE_DATASET_FOR_HASHTABLE_SIZE, true,false,MAX_LENGTH);
 
     // get configuration file if not given
     if (conf_file.empty()) {
